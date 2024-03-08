@@ -135,6 +135,13 @@
 
 (define CX (apply-op cnot-gate))
 
+(define qcnot-gate (matrix [[1 0 0 0]              ;; qiskit compatible endian (reverse)
+                            [0 0 0 1]
+                            [0 0 1 0]
+                            [0 1 0 0]]))
+
+(define qCX (apply-op qcnot-gate))
+
 (define (I n)
   (identity-matrix n))
 
