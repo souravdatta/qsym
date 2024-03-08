@@ -153,4 +153,8 @@
 
 (define h2 (G* hadamard hadamard))
 
+(define (qubits n)
+  (apply t* (for/list ([i (range n)])
+              q0)))
+
 (provide (all-defined-out))
