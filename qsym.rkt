@@ -128,7 +128,7 @@
       (else (tensor* (first qbits)
                      (apply t* (rest qbits)))))))
 
-(define cnot-gate (matrix [[1 0 0 0]
+(define cnot-gate (matrix [[1 0 0 0]              ;; Not qiskit compatible endian
                            [0 1 0 0]
                            [0 0 0 1]
                            [0 0 1 0]]))
@@ -147,4 +147,3 @@
 (define h2 (G* hadamard hadamard))
 
 (provide (all-defined-out))
-
