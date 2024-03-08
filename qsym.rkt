@@ -157,4 +157,15 @@
   (apply t* (for/list ([i (range n)])
               q0)))
 
+(define (make-circuit gate-list #:assembler [assembler qG*])
+  (let* ([ops (map (λ (gs) (if (list? gs)
+                               (apply assembler gs)
+                               gs))
+                   gate-list)])
+    (λ (input-qbits)
+      (for/fold ([sv input-qbits])
+                ([f ops])
+        (f sv)))))
+ 
+
 (provide (all-defined-out))
