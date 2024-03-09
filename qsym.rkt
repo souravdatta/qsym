@@ -29,24 +29,30 @@
 (define pauli-x (matrix [[0 1]
                          [1 0]]))
 
-(define X (apply-op pauli-x))
+(define gX (apply-op pauli-x))
 
 (define pauli-z (matrix [[1 0]
                          [0 -1]]))
 
-(define Z (apply-op pauli-z))
+(define gZ (apply-op pauli-z))
 
 (define pauli-y (matrix [[0 0-i]
                          [0+i 0]]))
 
-(define Y (apply-op pauli-y))
+(define gY (apply-op pauli-y))
 
 (define h-factor (/ 1.0 (sqrt 2)))
 
 (define hadamard (matrix [[h-factor h-factor]
                           [h-factor (- h-factor)]]))
 
-(define H (apply-op hadamard))
+(define gH (apply-op hadamard))
+
+;; shortcuts
+(define H hadamard)
+(define X pauli-x)
+(define Y pauli-y)
+(define Z pauli-z)
 
 ;; -----
 
