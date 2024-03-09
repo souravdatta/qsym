@@ -128,36 +128,34 @@
       (else (tensor* (first qbits)
                      (apply t* (rest qbits)))))))
 
-(define cnot-gate (matrix [[1 0 0 0]              ;; Not qiskit compatible endian
-                           [0 1 0 0]
+(define ncnot-gate (matrix [[1 0 0 0]              ;; Not qiskit compatible endian
+                            [0 1 0 0]
+                            [0 0 0 1]
+                            [0 0 1 0]]))
+
+(define nCX (apply-op ncnot-gate))
+
+(define cnot-gate (matrix [[1 0 0 0]              ;; qiskit compatible endian (reverse)
                            [0 0 0 1]
-                           [0 0 1 0]]))
+                           [0 0 1 0]
+                           [0 1 0 0]]))
 
 (define CX (apply-op cnot-gate))
-
-(define qcnot-gate (matrix [[1 0 0 0]              ;; qiskit compatible endian (reverse)
-                            [0 0 0 1]
-                            [0 0 1 0]
-                            [0 1 0 0]]))
-
-(define qCX (apply-op qcnot-gate))
 
 (define (I n)
   (identity-matrix n))
 
-(define (G* . ms)
+(define (nG* . ms) ;; native order
   (apply-op (apply t* ms)))
 
-(define (qG* . ms)
+(define (G* . ms)  ;; qiskit compatible
   (apply-op (apply t* (reverse ms))))
-
-(define h2 (G* hadamard hadamard))
 
 (define (qubits n)
   (apply t* (for/list ([i (range n)])
               q0)))
 
-(define (make-circuit gate-list #:assembler [assembler qG*])
+(define (make-circuit gate-list #:assembler [assembler G*])
   (let* ([ops (map (λ (gs) (if (list? gs)
                                (apply assembler gs)
                                gs))
