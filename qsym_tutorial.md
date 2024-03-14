@@ -260,13 +260,94 @@ Comparing to our classical counterpart, we see the tensor product actually creat
            (/ 1 (sqrt 2)))
     (qubit 1 0)) ==> (array #[#[0.7071067811865475] #[0] #[0.7071067811865475] #[0]])
 ```
-Now we see the fun of quantum computing. Given a combination of one qubit that 50% chance of being either `|0>` or `|1>` and another with 100% chance of being `|0>` - the combination is 50% `|00>` and 50% `|10>`! What are these chances we are talking about? These chances are finding these qubit combinations (i.e. `00` or `01`) when we measure them. So, lets measure some qubits next.
+Now we see the fun of quantum computing. Given a combination of one qubit with 50% chance of being either `|0>` or `|1>` and another with 100% chance of being `|0>` - the combination is 50% `|00>` and 50% `|10>`! What are these chances we are talking about? These chances are finding these qubit combinations (i.e. `00` or `01`) when we measure them. So, lets measure some qubits next.
 
 #### Measuring qubits
 
+This is where it gets really interesting. We are trying to now simulate a process that works in real life according to quantum mechanics - collapse of wave function! We start with a vector of probabilities and we know that their squares sum up to 1. All these values are probabilities, so if one value is greater than the others, then that has more chance of showing up than others when we measure the qbits combination (also called the state of the quantum system). Here's a simple strategy to simulate this - 
+1. We scale the probabilities up by a factor of 100.
+2. Now they should all cover the range from 0 - 99. If a probability is zero, we ignore it.
+3. We roll a dice and find a value between 0 and 100.
+4. We check under which probability region it has fallen. The higher the probability, the bigger the chance that the dice will fall within that region.
+5. But there's also a tinier chance that it will fall into the region of the other probabilities - which is what we see in real life too.
 
+Here's how it looks like in a semi-complex recursive definition
 
+```racket
+(define (range-map start probs obs roll i n)
+  (if (= i n)
+      (error "No observation from circuit - invalid state")
+      (if (= (list-ref probs i) 0)
+          (range-map start
+                     probs
+                     obs
+                     roll
+                     (+ i 1)
+                     n)
+          (if (and (>= roll start)
+                   (< roll (+ start (list-ref probs i))))
+              (list-ref obs i)
+              (range-map (+ start (list-ref probs i)) ; next start
+                         probs
+                         obs
+                         roll
+                         (+ i 1)            ; next observation to match
+                         n)))))
 
+(define (measure-mat m)
+  (let* ([len (matrix-num-rows m)]
+         [blen (exact-round (log len 2))]
+         [obs (bits-of-len blen)]
+         [ampls (matrix->list m)]
+         [scaled-probs (map (λ (x) (*  x x 100)) ampls)]
+         [roll (random 100)])
+    (range-map 0 scaled-probs obs roll 0 len)))
+```
 
+`range-map` is a tail recursive function which does the heavy lifting of the actual probability mapping operation. There's just one more step remaining to measurement - measuring repeatedly. For a quantum state, if we measure just one we might get some results from its probabilities, but that might not be a true picture of the system. So we have measure repeatedly and then find counts (or histogram) to see the actual results. Thus, the irregularities of single measurement will smooth out and we should get the actual estimation of the results. Note that we use the `bits-of-len` to map a column matrix to its corresponding `classical` bit combination.
+
+```racket
+(define (counts q #:shots [shots 1024])
+  (let ([results (make-hash)])
+    (for ([i (range shots)])
+      (let ([obs (measure-mat q)])
+        (if (hash-has-key? results obs)
+            (hash-set! results obs (+ (hash-ref results obs) 1))
+            (hash-set! results obs 1))))
+    results))
+```
+
+Now we define a symbol `q0` as a shortcut to `|0>`. Why only `|0>`? Because that's the state all qubits start with in quantum circuits. We will see how we can get `|1>` from `q0`.
+
+```racket
+(define q0 (qubit 1 0))
+```
+
+Ok, now lets measure some qubits!
+
+```racket
+(counts q0) ==> '#hash(((0) . 1024))
+```
+
+As expected, if you measure `|0>` then you always get `0`. How about that special state where we 50% chance of getting `0` or `1`?
+
+```racket
+(counts (t* (qubit (/ 1 (sqrt 2))
+            (/ 1 (sqrt 2)))) ==> '#hash(((0) . 514) ((1) . 510))
+```
+
+Look at that! We got almost equal numbers of 0s and 1s.
+
+And finally,
+
+```racket
+(counts (t* (qubit (/ 1 (sqrt 2))
+                   (/ 1 (sqrt 2)))
+            (qubit 1 0))) ==> '#hash(((0 0) . 495) ((1 0) . 529))
+```
+
+Believe it or not, this is about all the internal code we need to do cool things like quantum gates!
+
+## Part 3 - Quantum Gates
 
 
