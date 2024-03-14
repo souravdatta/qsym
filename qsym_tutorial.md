@@ -265,11 +265,12 @@ Now we see the fun of quantum computing. Given a combination of one qubit with 5
 #### Measuring qubits
 
 This is where it gets really interesting. We are trying to now simulate a process that works in real life according to quantum mechanics - collapse of wave function! We start with a vector of probabilities and we know that their squares sum up to 1. All these values are probabilities, so if one value is greater than the others, then that has more chance of showing up than others when we measure the qbits combination (also called the state of the quantum system). Here's a simple strategy to simulate this - 
+
 1. We scale the probabilities up by a factor of 100.
 2. Now they should all cover the range from 0 - 99. If a probability is zero, we ignore it.
 3. We roll a dice and find a value between 0 and 100.
 4. We check under which probability region it has fallen. The higher the probability, the bigger the chance that the dice will fall within that region.
-5. But there's also a tinier chance that it will fall into the region of the other probabilities - which is what we see in real life too.
+5. But there's also a tiny chance that it will fall into the region of the other probabilities - which is what we see in real life too.
 
 Here's how it looks like in a semi-complex recursive definition
 
@@ -304,7 +305,7 @@ Here's how it looks like in a semi-complex recursive definition
     (range-map 0 scaled-probs obs roll 0 len)))
 ```
 
-`range-map` is a tail recursive function which does the heavy lifting of the actual probability mapping operation. There's just one more step remaining to measurement - measuring repeatedly. For a quantum state, if we measure just one we might get some results from its probabilities, but that might not be a true picture of the system. So we have measure repeatedly and then find counts (or histogram) to see the actual results. Thus, the irregularities of single measurement will smooth out and we should get the actual estimation of the results. Note that we use the `bits-of-len` to map a column matrix to its corresponding `classical` bit combination.
+`range-map` is a tail recursive function which does the heavy lifting of the actual probability mapping operation. There's just one more step remaining to measurement - measuring repeatedly. For a quantum state, if we measure just once we might get some results from its probabilities, but that might not be a true picture of the system. So we have to measure repeatedly and then find counts (or histogram) to see the actual results. Thus, the irregularities of single measurement will smooth out and we should get the actual estimation of the results. Note that we use the `bits-of-len` to map a column matrix to its corresponding `classical` bit combination.
 
 ```racket
 (define (counts q #:shots [shots 1024])
@@ -357,7 +358,7 @@ Quantum gates get their name from logic gates in classical circuits. Classical c
 
 ### Applying a gate to a qubit
 
-How do we apply a gate to a qubit? It is as simple as multiplying two matrices. So if we want to apply `A` gate to qubit `q`, it is: `A * q` where `*` means matrix multiplication. Luckily, Racket already has a method to do that. Lets implement few functions for it.
+How do we apply a gate to a qubit? It is as simple as multiplying two matrices. So if we want to apply `A` gate to qubit `q`, it is: `A * q` where `*` means matrix multiplication. Luckily, Racket already has a function to do that. Lets implement a new function for it.
 
 ```racket
 (define ((apply-op op-matrix) q)
@@ -368,7 +369,7 @@ Note that it is a higher order function. We will see why very soon. Lets now tak
 
 #### X gate
 
-An `X` gate is used to invert a qubit. Conceptually, if a single qubit has probabilities `a` and `b` (both complex numbers), then the reverse qubit has probabilities `b` and `a`! So X gate is a matrix which does exactly that. This is the matrix for X gate is one Pauli matrices:
+An `X` gate is used to invert a qubit. Conceptually, if a single qubit has probabilities `a` and `b` (both complex numbers), then the reverse qubit has probabilities `b` and `a`! So X gate is a matrix which does exactly that. This is the matrix for X gate (which is one of the Pauli matrices):
 
 ```
 [0 1
@@ -400,7 +401,7 @@ Lets see it in action
 
 #### Hadamard gate
 
-This is probably the most famous gate! You will see it alnmost in every circuit and in plenty. It is defined like below:
+This is probably the most famous gate! You will see it almost in every circuit and in plenty. It is defined like below:
 
 ```racket
 (define h-factor (/ 1.0 (sqrt 2)))
@@ -411,7 +412,7 @@ This is probably the most famous gate! You will see it alnmost in every circuit 
 (define gH (apply-op hadamard))
 ```
 
-This gate makes a qubit in superposition state with 50-50 chances of wither measuring `0` or `1`.
+This gate makes a qubit in superposition state with 50-50 chances of measuring `0` or `1`.
 
 ```
 (gH q0) ==> (array #[#[0.7071067811865475] #[0.7071067811865475]])
@@ -440,7 +441,7 @@ The other Pauli matrices can also be defined as gates.
 (define gY (apply-op pauli-y))
 ```
 
-Finally since we will be using these gates quite often, lets define some sortcuts for the matrices that are easy to remember and distinguish in a circuit.
+Finally, since we will be using these gates quite often, lets define some sortcuts for the matrices that are easy to remember and distinguish in a circuit.
 
 ```racket
 ;; shortcuts
@@ -452,18 +453,18 @@ Finally since we will be using these gates quite often, lets define some sortcut
 
 #### State Vectors and Gates
 
-We were using the term column vectors to refer the quantum state. The actual term used in code and literature for these column vectors are `state vectors`. The gates basically take a state vector and return a new state vector.
+We were using the term column vectors to refer to the quantum state. The actual term used in code and literature for these column vectors are `state vectors`. The gates basically take a state vector and return a new state vector.
 
 `Gate :: State Vector -> State Vector`
 
 The qubit `q0` itself is just another state vector.
 
-What happens if we have two qubits and we want to apply gates to this state vector of two qubits? Suppose we want to apply `H` gate to the first qubit but no the second qubit. Lets take this step by step.
+What happens if we have two qubits and we want to apply gates to this state vector of two qubits? Suppose we want to apply `H` gate to the first qubit but not to the second qubit. Lets take this step by step.
 
 1. We know how to put two qubits into a state vector - we use tensor product.
 2. We know how to apply a quantum gate to a single qubit - that's matrix multiplication.
 3. Then how do we apply H gate to a state vector of two qubits? We can't as the matrices are of incompatible sizes.
-4. Solution is - we need make a bigger matrix for multiplication where part of the matrix is Hadamard matrix, the other part is simply an identity matrix.
+4. Solution is - we need to make a bigger matrix for multiplication where part of the matrix is Hadamard matrix, the other part is simply an identity matrix.
 5. How do we make the bigger matrix such that the parts fit correctly? Well, turns out we can just use the tensor product on the gates!
 
 ```racket
@@ -522,7 +523,7 @@ Statevector([0.70710678+0.j, 0.70710678+0.j, 0.        +0.j,
 
 It looks like we have all the values correct but the order they appear seems different from our state vector. What's going on?
 
-Turns out, the order of the matrices matter! In our current order, i.e. the `H` above and `(I 2)` below, makes it a big endian system, where the least significant bit is on the left. However, qiskit and others like `Q#` uses little endian systems - least significant bit is on the right. Although in the circuit diagram we see the least bit at the top, it is intepreted to be on the right! It is confusing but after a bit of back and front it becomes normal. So our code is right except our order needs to be opposite for it to match qiskit output. Lets try this:
+Turns out, the order of the matrices matter! In our current order, i.e. the `H` above and `(I 2)` below, it makes it a big endian system, where the least significant bit is on the left. However, qiskit and others like `Q#` uses little endian systems - least significant bit is on the right. Although in the circuit diagram we see the least bit at the top, it is intepreted to be on the right! It is confusing but after a bit of back and forth, it becomes normal (well hopefully). So our code is right except our order needs to be opposite for it to match qiskit output. Lets try this:
 
 ```racket
 (define new-gate (t* (I 2)
@@ -535,7 +536,7 @@ Turns out, the order of the matrices matter! In our current order, i.e. the `H` 
 
 state-vector ==> (array #[#[0.7071067811865475] #[0.7071067811865475] #[0] #[0]])
 ```
-Now that looks same as qiskit one. So how can we make it easier to combine these gates? Lets write some utility functions.
+Now that looks same as qiskit. So how can we make it easier to combine these gates? Lets write some utility functions.
 
 ```racket
 (define (G* . ms)  ;; qiskit compatible
@@ -549,7 +550,7 @@ Now that looks same as qiskit one. So how can we make it easier to combine these
               q0)))
 ```
 
-If we don't like little endian order, we can switch to normal order by using nG* function instead of G*. The `qubits` function just creates a state vector of n qubits all set to `|0>`.
+If we don't like little endian order, we can switch to normal order by using `nG*` function instead of `G*`. The `qubits` function just creates a state vector of n qubits all set to `|0>`.
 
 And finally we have a function to compose gates to create a circuit!
 
