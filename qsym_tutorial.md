@@ -492,11 +492,13 @@ Looks good! Now lets validate this agains a similar circuit in Qiskit.
 
 #### Big Endian vs Little Endian
 
+```
      ┌───┐
 q_0: ┤ H ├
      └───┘
 q_1: ─────
-          
+```
+       
 Here's the code for the equivalent code above in Qiskit:
 
 ```Python
