@@ -1,4 +1,4 @@
-# Building a Quantum Simulator from scratch
+# Building a Quantum Simulator from Scratch
 
 ## Introduction
 Lets dive in and build a simulator for a quantum computer (QC) from scratch, one step at a time. But before we go into the code, lets look at `what`s and `why`s.
