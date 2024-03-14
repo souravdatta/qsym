@@ -119,9 +119,9 @@ And qubit `|1>` is
 ```
 
 So, what's so special? Well, here's what:
-```
+
 A qubit can be either in |0> state or |1> state, or any state in between. This is called superposition state of the qubit.
-```
+
 Which means a qubit `q` can be either of,
 
 1.
@@ -143,7 +143,7 @@ Which means a qubit `q` can be either of,
 ```
 Where, the probability formula for `a` and `b` is `a^2 + b^2 = 1`. Here `a` and `b` are `complex` numbers. And the weird thing is, until we measure the qubit, it can be in a superposition state; but as soon as we measure the qubit, it collapses into one of `|0>` or `|1>` states! (Insert your favorite quote from Richard Fyenman about quantum weirdness here)
 
-The third from above is the general way we represent a qubit. As we can see, if b = 0 then we get `|0>` and if a = 0 we get `|1>`. This is what differentiates a classical bit's column vector from a qubit's column vector. In classical bits, the column vector can never have anything other than 1 in the rows. And that too only one of the rows can be `1` at a time. For qubits it can be any complex numbers at any row of the column vector, as long they all when squared and summed make 1.
+The third from above is the general way we represent a qubit. As we can see, if b = 0 then we get `|0>` and if a = 0 we get `|1>`. This is what differentiates a classical bit's column vector from a qubit's column vector. In classical bits, the column vector can never have anything other than 1 in the rows. And that too only one of the rows can be `1` at a time. For qubits it can be any complex numbers at any row of the column vector, as long as they all when squared and summed make 1.
 
 However, the property of superposition, and some others like entaglement, gives qubits and QC the edge over classical computing.
 
@@ -168,9 +168,101 @@ The `magnitude` function determines the correct absolute value (or `norm`) of a 
   (< (abs (- x y)) 0.00001))
 ```
 
-#### Measuring qubits
-Before we get down to measure bits, what's a measurement? As we go into the quantum domain, measurement becomes an important thing be watchful of. In simple terms, measurement is a process of observing the bits. And, it can be done either by a human directly or by a machine - either with light or with any other means. Before we measure something, the state of the system is unknown to us, but after we measure it it becomes known - which is stupidly simple but sort of becomes an interesting thing in the quantum domain. 
+Lets run it few times
 
+```racket
+(qubit 1 0) ==> (array #[#[1] #[0]])
+(qubit 0 1) ==> (array #[#[0] #[1]])
+(qubit 2 3) ==> Cannot create qubit, bad probabilities
+(qubit (/ 1 (sqrt 2))
+       (/ 1 (sqrt 2))) ==> (array #[#[0.7071067811865475] #[0.7071067811865475]])
+```
+
+That last qubit is really special - it has equal chance of being a `|0>` or `|1>`.
+
+## Part 2 - Operations on Qubits
+
+Now that we have enough code to build both classical and quantum bits, lets explore how we can build systems of multiple qubits and then measure those.
+
+#### One to many
+
+We know how to make one qubit but how do we make a couple of those? Just like a classical bit, `n` number of qubits can take `2^n`. The process is same, we create a column vector of `2^n` rows - but the values in those rows are now complex numbers - the sum of the square of which should add up to 1. The way to build this bigger column vector from smaller column vectors is to find the `tensor product` between qubit matrices (a column vector is a matrix of n by 1). A tensor product works like this -
+```
+[a b            [p q r
+ c d]   tensor*  x y z]
+
+==> [ a * [p q r   b * [p q r 
+           x y z]       x y z]
+      c * [p q r   d * [p q r
+           x y z]       x y z] ]
+==> [ ap aq ar bp bq br
+      ax ay az bx by bz
+      cp cq cr dp dq dr
+      cx cy cz dx dy dz ]
+```
+#### Tensor product code
+Implementing the tensor product is tricky. Given I wanted it quick, here's a version that looks more `C` than `Lisp`. But it works!
+
+```racket
+(define (tensor* m1 m2)
+  (define (mat->list m1 m2)
+    (matrix->list*
+     (matrix-map (λ (x)
+                   (matrix->list*
+                    (matrix-map (λ (y)
+                                  (* x y))
+                                m2)))
+                 m1)))
+
+  (define (list->mat m)
+    (let ([rows '()])
+      (for ([row m])
+        (for ([i (range (length (first row)))])
+          (let ([row-line '()])
+            (for ([m row])
+              (set! row-line (append row-line (list-ref m i))))
+            (set! rows (append rows (list row-line))))))
+      rows))
+  (let* ([m (mat->list m1 m2)]
+         [l (list->mat m)])
+    (list*->matrix l)))
+```
+We do a bit of juggling between matrix form and list form to make the iterative algorithm easy to write, but I am sure there's a better version that can work directly on the matrix.
+
+Following is a little utility function that takes any number of matrices and returns the tensor product of them all.
+
+```racket
+(define (t* . qbits)
+  (let ([n (length qbits)])
+    (cond
+      ((< n 1) (error "No qubits given"))
+      ((= n 1) (first qbits))
+      (else (tensor* (first qbits)
+                     (apply t* (rest qbits)))))))
+```
+
+Lets create a pair of qubits by tensor product.
+
+```racket
+;; |0> and |1> making |01>
+(t* (qubit 1 0)
+    (qubit 0 1)) ==> (array #[#[0] #[1] #[0] #[0]])
+
+;; |1> and |1> making |11> 
+(t* (qubit 0 1)
+    (qubit 0 1)) ==> (array #[#[0] #[0] #[0] #[1]])
+```
+
+Comparing to our classical counterpart, we see the tensor product actually creates the same kind of column vector. But here's one with non-trivial probabilities:
+
+```racket
+(t* (qubit (/ 1 (sqrt 2))
+           (/ 1 (sqrt 2)))
+    (qubit 1 0)) ==> (array #[#[0.7071067811865475] #[0] #[0.7071067811865475] #[0]])
+```
+Now we see the fun of quantum computing. Given a combination of one qubit that 50% chance of being either `|0>` or `|1>` and another with 100% chance of being `|0>` - the combination is 50% `|00>` and 50% `|10>`! What are these chances we are talking about? These chances are finding these qubit combinations (i.e. `00` or `01`) when we measure them. So, lets measure some qubits next.
+
+#### Measuring qubits
 
 
 
