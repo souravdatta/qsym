@@ -350,4 +350,114 @@ Believe it or not, this is about all the internal code we need to do cool things
 
 ## Part 3 - Quantum Gates
 
+Quantum gates get their name from logic gates in classical circuits. Classical computer circuits can be decomposed into a series of circuits with gates like AND, OR, NOT, NAND or XOR. Similarly, quantum circuits can be built using quantum gates. These gates are actually just matrices but they have special properties.
+
+1. They need to be unitary matrices.
+2. The application of the quantum gate needs to be reversible. Logic gates are not reversible but its a must for quantum gates to be reversible.
+
+### Applying a gate to a qubit
+
+How do we apply a gate to a qubit? It is as simple as multiplying two matrices. So if we want to apply `A` gate to qubit `q`, it is: `A * q` where `*` means matrix multiplication. Luckily, Racket already has a method to do that. Lets implement few functions for it.
+
+```racket
+(define ((apply-op op-matrix) q)
+  (matrix* op-matrix q))
+```
+
+Note that it is a higher order function. We will see why very soon. Lets now take a look at few useful gates.
+
+#### X gate
+
+An `X` gate is used to invert a qubit. Conceptually, if a single qubit has probabilities `a` and `b` (both complex numbers), then the reverse qubit has probabilities `b` and `a`! So X gate is a matrix which does exactly that. This is the matrix for X gate is one Pauli matrices:
+
+```
+[0 1
+ 1 0]
+```
+
+In code,
+
+```racket
+(define pauli-x (matrix [[0 1]
+                         [1 0]]))
+
+(define gX (apply-op pauli-x))
+```
+
+Lets see it in action
+
+```racket
+;; |0> to |1>
+(gX q0) ==> (array #[#[0] #[1]])
+
+;; and back
+(gX (gX q0)) ==> (array #[#[1] #[0]])
+
+;; Are they reversible? Yes
+(equal? (gX (gX q0))
+          q0) ==> #t
+```
+
+#### Hadamard gate
+
+This is probably the most famous gate! You will see it alnmost in every circuit and in plenty. It is defined like below:
+
+```racket
+(define h-factor (/ 1.0 (sqrt 2)))
+
+(define hadamard (matrix [[h-factor h-factor]
+                          [h-factor (- h-factor)]]))
+
+(define gH (apply-op hadamard))
+```
+
+This gate makes a qubit in superposition state with 50-50 chances of wither measuring `0` or `1`.
+
+```
+(gH q0) ==> (array #[#[0.7071067811865475] #[0.7071067811865475]])
+(gH (gH q0)) ==> (array #[#[0.9999999999999998] #[0.0]])
+
+;; Put |0> in superposition state
+(counts (gH q0)) ==> '#hash(((0) . 513) ((1) . 511))
+
+;; Put |1> in superposition state
+(gH (gX q0)) ==> (array #[#[0.7071067811865475] #[-0.7071067811865475]])
+```
+
+#### Other Pauli gates
+
+The other Pauli matrices can also be defined as gates.
+
+```racket
+(define pauli-z (matrix [[1 0]
+                         [0 -1]]))
+
+(define gZ (apply-op pauli-z))
+
+(define pauli-y (matrix [[0 0-i]
+                         [0+i 0]]))
+
+(define gY (apply-op pauli-y))
+```
+
+Finally since we will be using these gates quite often, lets define some sortcuts for the matrices that are easy to remember and distinguish in a circuit.
+
+```racket
+;; shortcuts
+(define H hadamard)
+(define X pauli-x)
+(define Y pauli-y)
+(define Z pauli-z)
+```
+
+#### State Vectors and Gates
+
+We were using the term column vectors to refer the quantum state. The actual term used in code and literature for these column vectors are `state vectors`. The gates basically take a state vector and return a new state vector.
+
+`Gate :: State Vector -> State Vector`
+
+The qubit `q0` itself is just another state vector.
+
+What happens if we have two qubits and we want to apply gates to this state vector of two qubits?
+
 
