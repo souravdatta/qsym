@@ -348,7 +348,7 @@ And finally,
 
 Believe it or not, this is about all the internal code we need to do cool things like quantum gates!
 
-## Part 3 - Quantum Gates
+## Part 3 - Quantum Gates and Circuits
 
 Quantum gates get their name from logic gates in classical circuits. Classical computer circuits can be decomposed into a series of circuits with gates like AND, OR, NOT, NAND or XOR. Similarly, quantum circuits can be built using quantum gates. These gates are actually just matrices but they have special properties.
 
@@ -458,6 +458,110 @@ We were using the term column vectors to refer the quantum state. The actual ter
 
 The qubit `q0` itself is just another state vector.
 
-What happens if we have two qubits and we want to apply gates to this state vector of two qubits?
+What happens if we have two qubits and we want to apply gates to this state vector of two qubits? Suppose we want to apply `H` gate to the first qubit but no the second qubit. Lets take this step by step.
 
+1. We know how to put two qubits into a state vector - we use tensor product.
+2. We know how to apply a quantum gate to a single qubit - that's matrix multiplication.
+3. Then how do we apply H gate to a state vector of two qubits? We can't as the matrices are of incompatible sizes.
+4. Solution is - we need make a bigger matrix for multiplication where part of the matrix is Hadamard matrix, the other part is simply an identity matrix.
+5. How do we make the bigger matrix such that the parts fit correctly? Well, turns out we can just use the tensor product on the gates!
+
+```racket
+(define (I n)
+  (identity-matrix n))
+```
+
+`I` function is used to generate an identity matrix of `n` rows and columns. For a single qubit, n = 2 because it has two possible outcomes.
+
+Once we have this defined, lets make a state vector where we apply `H` gate to the first qubit.
+
+```racket
+
+(define new-gate (t* H
+                     (I 2)))
+
+(define initial-qubits (t* q0
+                          q0))
+
+(define state-vector ((apply-op new-gate) initial-qubits))
+
+state-vector ==> (array #[#[0.7071067811865475] #[0] #[0.7071067811865475] #[0]])
+```
+Looks good! Now lets validate this agains a similar circuit in Qiskit.
+
+
+#### Big Endian vs Little Endian
+
+     ┌───┐
+q_0: ┤ H ├
+     └───┘
+q_1: ─────
+          
+Here's the code for the equivalent code above in Qiskit:
+
+```Python
+from qiskit import *
+from qiskit_aer import StatevectorSimulator
+
+circuit = QuantumCircuit(2)
+circuit.h(0)
+
+simulator = StatevectorSimulator()
+result = simulator.run(circuit).result()
+result.get_statevector()
+```
+
+The answer we get is 
+```
+Statevector([0.70710678+0.j, 0.70710678+0.j, 0.        +0.j,
+             0.        +0.j],
+            dims=(2, 2))
+```
+
+It looks like we have all the values correct but the order they appear seems different from our state vector. What's going on?
+
+Turns out, the order of the matrices matter! In our current order, i.e. the `H` above and `(I 2)` below, makes it a big endian system, where the least significant bit is on the left. However, qiskit and others like `Q#` uses little endian systems - least significant bit is on the right. Although in the circuit diagram we see the least bit at the top, it is intepreted to be on the right! It is confusing but after a bit of back and front it becomes normal. So our code is right except our order needs to be opposite for it to match qiskit output. Lets try this:
+
+```racket
+(define new-gate (t* (I 2)
+                       H))
+
+(define initial-qubits (t* q0
+                             q0))
+
+(define state-vector ((apply-op new-gate) initial-qubits))
+
+state-vector ==> (array #[#[0.7071067811865475] #[0.7071067811865475] #[0] #[0]])
+```
+Now that looks same as qiskit one. So how can we make it easier to combine these gates? Lets write some utility functions.
+
+```racket
+(define (G* . ms)  ;; qiskit compatible
+  (apply-op (apply t* (reverse ms))))
+
+(define (nG* . ms) ;; native order
+  (apply-op (apply t* ms)))
+
+(define (qubits n)
+  (apply t* (for/list ([i (range n)])
+              q0)))
+```
+
+If we don't like little endian order, we can switch to normal order by using nG* function instead of G*. The `qubits` function just creates a state vector of n qubits all set to `|0>`.
+
+And finally we have a function to compose gates to create a circuit!
+
+```racket
+(define (make-circuit gate-list #:assembler [assembler G*])
+  (let ([ops (map (λ (gs) (if (list? gs)
+                              (apply assembler gs)
+                              gs))
+                  gate-list)])
+    (λ (input-qbits)
+      (for/fold ([sv input-qbits])
+                ([f ops])
+        (f sv)))))
+```
+
+And we are done! Indeed, with just about these, we are now ready to create some circuits and experiment.
 
