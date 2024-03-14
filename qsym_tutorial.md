@@ -29,3 +29,15 @@ version of Racket. But, the code can be converted to typed Racket code and it ca
 
 ## Part 1 - From Bits to Qubits
 
+Our computers work with `bits`. Bits are used for storing binary data. All our software work with binary data and we have been optimizing our computers to work more of binary data and with more speed. We will see that in the quantum domain, we still have the concept of binary data but not exactly as it is in the "classical" domain. So, lets start with our familiar good old classical bit.
+
+#### Representing classical bits
+How do we show a classical bit? Its easy, either write `0` or `1`. That's because a bit can either be in state `0` or `1`. In hardware, this could be that a 5 volt charge can represent 1 and 0 volt can represent 0. Current hardware and SSD disks are much advanced, but the basic concept is the same. What about two bits? Two bits can be in various different combinations of states, because if one is `0` the other can be either `0` or `1` abd vice versa. So, these are possible states: `00`, `01`, `10`, `11`. In a little math terms, if we have `n` bits, there can be `2^n` combinations in total. This is good, but we can represent the same thing with a little different manner, which will be very useful when we go to qubits. This representation does not list out all the combinations individually, but rather shows which value among all combinations should be turned on. Lets look at it in action. For `n = 2`, we know that we will have `2^2 = 4` combinations, which we saw earlier. This means if I create a list of 4 elements, I can map an element in the list to one of the combinations. A list like `[a, b, c, d]` can be used to map like this: `a => 00, b => 01, c => 10, d => 11`. But since, at any moment, only one of these 4 combinations can be present, it means out of `a, b, c and d` only one value can be present at a time, but not all. So then simplifying the mapping a bit. We say, `[1, 0, 0, 0]` means `00`. Similarly, `[0, 1, 0, 0]` means `01`; `[0, 0, 1, 0]` means `10`; `[0, 0, 0, 1]` means `11`. 
+
+
+
+
+
+
+
+
