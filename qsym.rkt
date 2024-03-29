@@ -170,6 +170,46 @@
       (for/fold ([sv input-qbits])
                 ([f ops])
         (f sv)))))
- 
+
+;; QFT
+
+(define (w k n N)
+  (exp (*
+        (/ (* 2 pi)
+           N)
+        0+1i
+        n
+        k)))
+
+(define (w-inverse k n N)
+  (exp (*
+        (/ (* -2 pi)
+           N)
+        0+1i
+        n
+        k)))
+
+(define (fourier-matrix N)
+  (matrix-map
+   (λ (x)
+     (/ x
+        (sqrt N)))
+   (list*->matrix
+    (for/list ([n (range 0 N)])
+      (for/list ([k (range 0 N)])
+        (w k n N))))))
+
+(define (inverse-fourier-matrix N)
+  (matrix-map
+   (λ (x)
+     (/ x
+        (sqrt N)))
+   (list*->matrix
+    (for/list ([n (range 0 N)])
+      (for/list ([k (range 0 N)])
+        (w-inverse k n N))))))
+
+(define F fourier-matrix)
+(define Fi inverse-fourier-matrix)
 
 (provide (all-defined-out))
