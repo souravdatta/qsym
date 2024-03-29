@@ -334,7 +334,7 @@ As expected, if you measure `|0>` then you always get `0`. How about that specia
 
 ```racket
 (counts (t* (qubit (/ 1 (sqrt 2))
-            (/ 1 (sqrt 2)))) ==> '#hash(((0) . 514) ((1) . 510))
+            (/ 1 (sqrt 2))))) ==> '#hash(((0) . 514) ((1) . 510))
 ```
 
 Look at that! We got almost equal numbers of 0s and 1s.
