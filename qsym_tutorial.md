@@ -802,5 +802,24 @@ Output:
 '#hash(((0 1) . 493) ((1 0) . 531))
 ```
 
-For all possible values of the control qubit we see CNOT gate flipping the output.
+For all possible values of the control qubit we see CNOT gate flipping the output. Next we will put Hadamard gate on lowermost control qubit. The output is especially interesting.
+
+<img width="184" alt="cnot_3_6" src="https://github.com/souravdatta/qsym/assets/1576318/83c2cfe5-c649-4c89-9c94-2180a385332b">
+
+Here's the code and output:
+```Racket
+(define c4 (make-circuit
+            (list (list H
+                        (I 2))
+                  CX)))
+
+(counts (c4 (qubits 2)))
+```
+
+```
+'#hash(((1 1) . 534) ((0 0) . 490))
+```
+
+Here, we get both qubits wither `00` or `11`. However, turns out that with a gate like this the output qubits are **entangled**! Which means, if one qubit is measured `0` then the other will definitely be measured `0` and vice versa! Even when you take one qubit at the end of the galaxy. If that measures as `1`, the one on earth will also measure as `1`! And that's what we also see in the final output. How entanglement works is still a puzzle, no wonder, old Einstein named it Spooky action at a distance. But for us, mere mortal Lisp programmers, I think entangled particles are like code in the form of data! More on that ranting in a blog somewhere else.
+
 
