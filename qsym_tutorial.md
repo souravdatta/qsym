@@ -642,12 +642,165 @@ And we to measurements with:
 (counts (c2 (qubits 3)))
 ```
 
-Note, now our input is 3 qubits in base state.
+Note, now our input is superposition of 3 qubits in base state.
 
 Output:
 ```
 '#hash(((1 0 0) . 511) ((1 0 1) . 513))
 ```
 
+#### The CNOT gate
+We can't go far without using controlled gates - gates which control their output qubit based on a control qubit. A typical control gate is the CNOT gate, which looks like this:
 
+<img width="122" alt="cnot_3_4" src="https://github.com/souravdatta/qsym/assets/1576318/f1b11c78-35cd-4152-aaba-624f4c00177e">
+
+When `q0` is `|1>`, then `q1` is flipped. `q0` continues be the same on the output side. When `q0` is `|0>` then the outputs are unchanged.
+
+How do we build a gate like this in our library? The answer is simple really, we just need to find the unitary matrix corresponding to this gate. Lets see how we do that.
+
+First, we create the truth table for the gate.
+
+```
+  q1     |     q0     |    o1      |    o2
+
+  0            0           0            0
+  0            1           1            1          <-- flipped
+  1            0           1            0
+  1            1           0            1          <-- flipped
+```
+  
+Looking at the outputs we now know that for a given input, which column of the matrix needs to be on in order for that qubit combination to be selected. Essentially, this happens by converting the above truth table in the column vector form.
+
+```
+|0 0>
+[1,            [1,
+ 0,      ===>   0,
+ 0,             0,
+ 0]             0]
+
+|0 1>
+[0,           [0,
+ 1,      ===>  0,
+ 0,            0, 
+ 0]            1]
+
+|1 0>
+[0,           [0,
+ 0,      ===>  0,
+ 1,            1, 
+ 0]            0]
+
+|1 1>
+[0,           [0,
+ 0,      ===>  1,
+ 0,            0, 
+ 1]            0]
+
+```
+Since its a superposition of 2 qubits, we need 4 rows in the column vector form. 
+
+Second, we combine the column vectors in the output and put them in a matrix. So, here's our CNOT matrix in final form.
+
+```
+#[#[1 0 0 0]
+  #[0 0 0 1]
+  #[0 0 1 0]
+  #[0 1 0 0]]
+```
+
+Ok, but how do we get this matrix just from a function like CNOT? We need to add a few functions. So here goes:
+
+```Racket
+(define (bits->decimal bits)
+  (for/fold ([dec 0])
+            ([x (reverse bits)]
+             [n (range (length bits))])
+    (+ dec (* x (expt 2 n)))))
+
+(define (bits->colv bits)
+  (let* ([n (length bits)]
+         [N (expt 2 n)]
+         [output (make-list N 0)]
+         [decimal (bits->decimal bits)])
+    (list-update output decimal (λ (x) 1))))
+```
+The function `bits->colv` takes a binary string in qubit or bit representation and converts it into its corresponding column vector representation.
+
+```Racket
+(define (gate-matrix n tx-rules)
+  (let* ([inputs (bits-of-len n)]
+         [coords (for/list ([i inputs])
+                   (transform-rules (reverse i) ;; msb -> lsb
+                                    tx-rules))]
+         [lsb-coords (map reverse coords)])
+    (matrix-transpose
+     (list*->matrix
+      (map bits->colv lsb-coords)))))
+```
+
+We take a bit length of n and some rules. These rules are of the form:
+
+```
+(list-of (list-of indexes) function-on-the-indexes)
+```
+The list of indexes indicate which of the inputs are to be applied to the function. For the other inputs, it will be copied to output without change. The function is suposed to return the same number of outputs as the inputs. The reason for this will be apparent for circuits where input is 6 qubits but out of those we only connect 0th and 4th qubits to a CNOT gate. The functions which do the transformations of the input to output after applying the transformation rules, are as follows:
+
+```Racket
+(define (transform-rule input rule)
+  (let* ([ixs (first rule)]
+         [f (second rule)]
+         [input-ixs (for/list ([x ixs])
+                      (list-ref input x))]
+         [output-vs (apply f input-ixs)])
+    (let ([output input])
+      (for/list ([i (range (length input))])
+        (if (member i ixs)
+            (let ([vh (first output-vs)])
+              (set! output-vs (rest output-vs))
+              vh)
+            (list-ref input i))))))
+
+(define (transform-rules input rules)
+  (for/fold ([i input])
+            ([r rules])
+    (transform-rule i r)))
+```
+
+Lets see it in action:
+
+```Racket
+(define (cnot-f control target)
+  (if (= control 1)
+      (list control (if (= target 1) 0 1))
+      (list control target)))
+
+(define cnot-gate (gate-matrix 2
+                               (list (list '(0 1)
+                                           cnot-f))))
+```
+
+The cnot-gate matrix looks like this:
+```
+(array #[#[1 0 0 0] #[0 0 0 1] #[0 0 1 0] #[0 1 0 0]])
+```
+This is same as what we worked out manually. Below is a code to put it into action, we are going to use a Hadamard gate to put the control qubit into all possible states and then check how CNOT gate works against all of those. The circuit we are building is like this:
+
+<img width="172" alt="cnot_3_5" src="https://github.com/souravdatta/qsym/assets/1576318/4187f64b-fb57-4ca4-9c3d-a0259574c152">
+
+
+```Racket
+(define c3 (make-circuit
+            (list (list H
+                        X)
+                  CX)))
+
+(counts (c3 (qubits 2)))
+```
+
+Output:
+```
+'#hash(((0 1) . 493) ((1 0) . 531))
+```
+
+For all possible values of the control qubit we see CNOT gate flipping the output.
 
