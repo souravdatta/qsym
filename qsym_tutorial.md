@@ -568,3 +568,86 @@ And finally we have a function to compose gates to create a circuit!
 
 And we are done! Indeed, with just about these, we are now ready to create some circuits and experiment.
 
+## Part 4 - Simple Circuits
+
+We will experiment with some basic circuits in this part before moving on to something complicated. We will see the diagrams drawn from Qiskit programs. Lets start with some Hadamard gates.
+
+<img width="214" alt="circuit_3_1" src="https://github.com/souravdatta/qsym/assets/1576318/d3609b84-a70d-4f1a-8af4-78c3ac4271ed">
+
+The qiskit code for this is:
+
+```Python
+circuit = QuantumCircuit(2)
+
+circuit.x(1)
+circuit.barrier()
+circuit.h(0)
+circuit.h(1)
+
+circuit.draw('mpl')
+```
+
+And this is how it looks like in qsym
+
+```Racket
+(define c1 (make-circuit
+            (list (list (I 2)
+                        X)
+                  (list H
+                        H))))
+```
+
+You can see in our code we need to explicitly specify all the gates for a layer. In Qiskit, we can say just apply `X` to qubit 1 and leave qubit 0 alone. We cannot do this currently in qsym because we create the layers based on just matrix multiplications. Since there is nothing applied at this stage to qubit 0, we need to say apply an `2x2 identity matrix` to the first one, which will keep it unchanged. Now, internally qiskit might also be doing it, but our case is, at least for now, very explicit. Similarly in the second layer we apply two Hadamard gates to both qubit 0 and 1. Lets see the output of this circuit after measuring. The qiskit code:
+
+```Python
+sim2 = QasmSimulator()
+circuit.measure_all()
+result = sim2.run(circuit).result()
+counts = result.get_counts()
+```
+And equivalent qsym code:
+
+```Racket
+(counts (c1 (qubits 2)))
+```
+
+Since our circuits are just plain functions, we apply to it a combination of 2 qubits all in base state. Then we use `counts` to measure and tally the counts for 1024 runs.
+
+```
+'#hash(((0 1) . 255) ((0 0) . 272) ((1 1) . 252) ((1 0) . 245))
+```
+We see almost equal probabilities for getting all possible combinations. The output is same as in qiskit.
+
+<img width="467" alt="circuit_3_2" src="https://github.com/souravdatta/qsym/assets/1576318/523ba42f-9aa8-4195-9c48-5fe92657fee1">
+
+Now lets do another circuit with 3 qubits.
+
+<img width="230" alt="circuit_3_3" src="https://github.com/souravdatta/qsym/assets/1576318/be20e851-649c-438e-a722-1efc5e920672">
+
+The code for this is:
+
+```Racket
+(define c2 (make-circuit
+            (list (list X
+                        (I 2)
+                        X)
+                  (list H
+                        (I 2)
+                        (I 2)))))
+```
+
+And we to measurements with:
+
+```Racket
+(counts (c2 (qubits 3)))
+```
+
+Note, now our input is 3 qubits in base state.
+
+Output:
+```
+'#hash(((1 0 0) . 511) ((1 0 1) . 513))
+```
+
+
+
