@@ -555,11 +555,11 @@ If we don't like little endian order, we can switch to normal order by using `nG
 And finally we have a function to compose gates to create a circuit!
 
 ```racket
-(define (make-circuit gate-list #:assembler [assembler G*])
+(define (make-circuit matrices #:assembler [assembler G*])
   (let ([ops (map (λ (gs) (if (list? gs)
                               (apply assembler gs)
-                              gs))
-                  gate-list)])
+                              (apply-op gs)))
+                  matrices)])
     (λ (input-qbits)
       (for/fold ([sv input-qbits])
                 ([f ops])
