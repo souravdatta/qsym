@@ -65,6 +65,19 @@
                         [x lower-bits])
               (cons i x))))))
 
+(define (bits->decimal bits)
+  (for/fold ([dec 0])
+            ([x (reverse bits)]
+             [n (range (length bits))])
+    (+ dec (* x (expt 2 n)))))
+
+(define (bits->colv bits)
+  (let* ([n (length bits)]
+         [N (expt 2 n)]
+         [output (make-list N 0)]
+         [decimal (bits->decimal bits)])
+    (list-update output decimal (λ (x) 1))))
+
 (define (range-map start probs obs roll i n)
   (if (= i n)
       (error "No observation from circuit - invalid state")
@@ -134,20 +147,6 @@
       (else (tensor* (first qbits)
                      (apply t* (rest qbits)))))))
 
-(define ncnot-gate (matrix [[1 0 0 0]              ;; Not qiskit compatible endian
-                            [0 1 0 0]
-                            [0 0 0 1]
-                            [0 0 1 0]]))
-
-(define nCX (apply-op ncnot-gate))
-
-(define cnot-gate (matrix [[1 0 0 0]              ;; qiskit compatible endian (reverse)
-                           [0 0 0 1]
-                           [0 0 1 0]
-                           [0 1 0 0]]))
-
-(define CX (apply-op cnot-gate))
-
 (define (I n)
   (identity-matrix n))
 
@@ -161,17 +160,65 @@
   (apply t* (for/list ([i (range n)])
               q0)))
 
-(define (make-circuit gate-list #:assembler [assembler G*])
+(define (make-circuit matrices #:assembler [assembler G*])
   (let ([ops (map (λ (gs) (if (list? gs)
                               (apply assembler gs)
-                              gs))
-                  gate-list)])
+                              (apply-op gs)))
+                  matrices)])
     (λ (input-qbits)
       (for/fold ([sv input-qbits])
                 ([f ops])
         (f sv)))))
 
+;;;;;;;;;
+
+(define (transform-rule input rule)
+  (let* ([ixs (first rule)]
+         [f (second rule)]
+         [input-ixs (for/list ([x ixs])
+                      (list-ref input x))]
+         [output-vs (apply f input-ixs)])
+    (let ([output input])
+      (for/list ([i (range (length input))])
+        (if (member i ixs)
+            (let ([vh (first output-vs)])
+              (set! output-vs (rest output-vs))
+              vh)
+            (list-ref input i))))))
+
+(define (transform-rules input rules)
+  (for/fold ([i input])
+            ([r rules])
+    (transform-rule i r)))
+
+(define (gate-matrix n tx-rules)
+  (let* ([inputs (bits-of-len n)]
+         [coords (for/list ([i inputs])
+                   (transform-rules (reverse i) ;; msb -> lsb
+                                    tx-rules))]
+         [lsb-coords (map reverse coords)])
+    (matrix-transpose
+     (list*->matrix
+      (map bits->colv lsb-coords)))))
+
+;;;;;;;;;
+
+(define (cnot-f control target)
+  (if (= control 1)
+      (list control (if (= target 1) 0 1))
+      (list control target)))
+
+(define cnot-gate (gate-matrix 2
+                               (list (list '(0 1)
+                                           cnot-f))))
+
+(define CX cnot-gate)
+(define gCX (apply-op cnot-gate))
+
+   
+;;;;;;;;;
 ;; QFT
+;;;;;;;;;
 
 (define (w k n N)
   (exp (*
