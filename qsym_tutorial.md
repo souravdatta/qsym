@@ -777,6 +777,7 @@ Lets see it in action:
 (define cnot-gate (gate-matrix 2
                                (list (list '(0 1)
                                            cnot-f))))
+(define CX cnot-gate)
 ```
 
 The cnot-gate matrix looks like this:
