@@ -141,9 +141,9 @@ Which means a qubit `q` can be either of,
 [a
  b]
 ```
-Where, the probability formula for `a` and `b` is `a^2 + b^2 = 1`. Here `a` and `b` are `complex` numbers. And the weird thing is, until we measure the qubit, it can be in a superposition state; but as soon as we measure the qubit, it collapses into one of `|0>` or `|1>` states! (Insert your favorite quote from Richard Fyenman about quantum weirdness here)
+Where, the probability formula for `a` and `b` is `|a|^2 + |b|^2 = 1`. Here `a` and `b` are `complex` numbers. And the weird thing is, until we measure the qubit, it can be in a superposition state; but as soon as we measure the qubit, it collapses into one of `|0>` or `|1>` states! (Insert your favorite quote from Richard Fyenman about quantum weirdness here)
 
-The third from above is the general way we represent a qubit. As we can see, if b = 0 then we get `|0>` and if a = 0 we get `|1>`. This is what differentiates a classical bit's column vector from a qubit's column vector. In classical bits, the column vector can never have anything other than 1 in the rows. And that too only one of the rows can be `1` at a time. For qubits it can be any complex numbers at any row of the column vector, as long as they all when squared and summed make 1.
+The third from above is the general way we represent a qubit. As we can see, if b = 0 then we get `|0>` and if a = 0 we get `|1>`. This is what differentiates a classical bit's column vector from a qubit's column vector. In classical bits, the column vector can never have anything other than 1 in the rows. And that too only one of the rows can be `1` at a time. For qubits it can be any complex numbers at any row of the column vector, as long as their magnitudes squared and summed make 1.
 
 However, the property of superposition, and some others like entaglement, gives qubits and QC the edge over classical computing.
 
