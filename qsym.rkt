@@ -8,6 +8,7 @@
 
 (require math/matrix)
 (require math/array)
+(require plot)
 
 (define (e-equal? x y)
   (< (abs (- x y)) 0.00001))
@@ -169,6 +170,16 @@
       (for/fold ([sv input-qbits])
                 ([f ops])
         (f sv)))))
+
+;;;;;;;;;
+
+(define (plot-histogram cs)
+  (let* ([counts (hash->list cs)]
+         [count-vs (map (λ (x)
+                          (vector (car x)
+                                  (cdr x)))
+                        counts)])
+    (plot (discrete-histogram count-vs))))
 
 ;;;;;;;;;
 
