@@ -104,7 +104,7 @@
          [blen (exact-round (log len 2))]
          [obs (bits-of-len blen)]
          [ampls (matrix->list m)]
-         [scaled-probs (map (λ (x) (*  x x 100)) ampls)]
+         [scaled-probs (map (λ (x) (*  (magnitude x) (magnitude x) 100)) ampls)]
          [roll (random 100)])
     (range-map 0 scaled-probs obs roll 0 len)))
 
