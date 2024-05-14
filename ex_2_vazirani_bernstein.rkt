@@ -1,5 +1,10 @@
 #lang racket
 
+;; Copyright Sourav Datta (soura.jagat@gmail.com)
+;; You should have received a copy of the LICENSE along with this code
+;; in the repository. If not refer to
+;; https://github.com/souravdatta/qsym/blob/main/LICENSE
+
 (require "qsym.rkt")
 
 ;; Oracle for 10011
@@ -29,4 +34,5 @@
 
 (define r (cirq input))
 
-(counts r #:shots 2000) ;; 110011 with close 100% probability
+(plot-histogram
+ (counts r #:shots 2000)) ;; 110011 with close 100% probability
