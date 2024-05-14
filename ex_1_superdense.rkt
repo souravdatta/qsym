@@ -28,6 +28,7 @@
 (define input (qubits 2))
 
 (counts (circuit1 input)) ;; decoded as (0 1) -> qiskit endian!
+(plot-histogram (counts (circuit1 input)))
 
 
 (define circuit2
@@ -42,6 +43,7 @@
                (I 2))))) ;; 6
 
 (counts (circuit2 input)) ;; decoded as (1 0) -> qiskit endian!
+(plot-histogram (counts (circuit2 input)))
 
 
 (define circuit3
@@ -58,6 +60,7 @@
                (I 2))))) ;; 6
 
 (counts (circuit3 input)) ;; decoded as (1 1) -> qiskit endian!
+(plot-histogram (counts (circuit3 input)))
 
 
 (define circuit4
@@ -72,3 +75,4 @@
                (I 2))))) ;; 6
 
 (counts (circuit4 input)) ;; decoded as (0 0) -> qiskit endian!
+(plot-histogram (counts (circuit4 input)))
