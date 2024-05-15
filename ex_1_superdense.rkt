@@ -17,13 +17,13 @@
 (define circuit1
   (make-circuit
    (list (list H
-               (I 2))    ;; 1
+               I2)    ;; 1
          CX              ;; 2
          (list Z
-               (I 2))    ;; 3,4
+               I2)    ;; 3,4
          CX              ;; 5
          (list H
-               (I 2))))) ;; 6
+               I2)))) ;; 6
 
 (define input (qubits 2))
 
@@ -34,13 +34,13 @@
 (define circuit2
   (make-circuit
    (list (list H
-               (I 2))    ;; 1
+               I2)    ;; 1
          CX              ;; 2
          (list X
-               (I 2))    ;; 3,4
+               I2)    ;; 3,4
          CX              ;; 5
          (list H
-               (I 2))))) ;; 6
+               I2)))) ;; 6
 
 (counts (circuit2 input)) ;; decoded as (1 0) -> qiskit endian!
 (plot-histogram (counts (circuit2 input)))
@@ -49,15 +49,15 @@
 (define circuit3
   (make-circuit
    (list (list H
-               (I 2))    ;; 1
+               I2)    ;; 1
          CX              ;; 2
          (list Z
-               (I 2))
+               I2)
          (list X
-               (I 2))    ;; 3,4
+               I2)    ;; 3,4
          CX              ;; 5
          (list H
-               (I 2))))) ;; 6
+               I2)))) ;; 6
 
 (counts (circuit3 input)) ;; decoded as (1 1) -> qiskit endian!
 (plot-histogram (counts (circuit3 input)))
@@ -66,13 +66,13 @@
 (define circuit4
   (make-circuit
    (list (list H
-               (I 2))    ;; 1
+               I2)    ;; 1
          CX              ;; 2
-         (list (I 2)
-               (I 2))    ;; 3,4
+         (list I2
+               I2)    ;; 3,4
          CX              ;; 5
          (list H
-               (I 2))))) ;; 6
+               I2)))) ;; 6
 
 (counts (circuit4 input)) ;; decoded as (0 0) -> qiskit endian!
 (plot-histogram (counts (circuit4 input)))
