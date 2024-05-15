@@ -151,6 +151,9 @@
 (define (I n)
   (identity-matrix n))
 
+;; shortcut
+(define I2 (I 2))
+
 (define (nG* . ms) ;; native order
   (apply-op (apply t* ms)))
 
