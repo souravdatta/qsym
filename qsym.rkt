@@ -104,7 +104,7 @@
          [blen (exact-round (log len 2))]
          [obs (bits-of-len blen)]
          [ampls (matrix->list m)]
-         [scaled-probs (map (λ (x) (*  (magnitude x) (magnitude x) 100)) ampls)]
+         [scaled-probs (map (λ (x) (*  (sqr (magnitude x)) 100)) ampls)]
          [roll (random 100)])
     (range-map 0 scaled-probs obs roll 0 len)))
 
@@ -173,6 +173,9 @@
       (for/fold ([sv input-qbits])
                 ([f ops])
         (f sv)))))
+
+(define (circuit . gates)
+  (make-circuit gates))
 
 ;;;;;;;;;
 
@@ -272,5 +275,23 @@
 
 (define F fourier-matrix)
 (define Fi inverse-fourier-matrix)
+
+;;;;;;;;;;;;;;;;;;;
+;; Rotation gates
+;;;;;;;;;;;;;;;;;;;
+
+(define (Rx theta)
+  (matrix [[(cos (/ theta 2)) (make-rectangular 0 (- (sin (/ theta 2))))]
+           [(make-rectangular 0 (- (sin (/ theta 2)))) (cos (/ theta 2))]]))
+
+(define (Rz theta)
+  (matrix [[(exp (make-rectangular 0 (- (/ theta 2)))) 0]
+           [0 (exp (make-rectangular 0 (/ theta 2)))]]))
+
+(define (Ry theta)
+  (matrix [[(cos (/ theta 2)) (- (sin (/ theta 2)))]
+           [(sin (/ theta 2)) (cos (/ theta 2))]]))
+
+
 
 (provide (all-defined-out))
