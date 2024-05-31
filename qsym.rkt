@@ -292,6 +292,15 @@
   (matrix [[(cos (/ theta 2)) (- (sin (/ theta 2)))]
            [(sin (/ theta 2)) (cos (/ theta 2))]]))
 
+(define (gRx theta q)
+  ((apply-op (Rx theta)) q))
+
+(define (gRy theta q)
+  ((apply-op (Ry theta)) q))
+
+(define (gRz theta q)
+  ((apply-op (Rz theta)) q))
+
 
 
 (provide (all-defined-out))
