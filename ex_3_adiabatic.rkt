@@ -23,7 +23,7 @@
 (plot-histogram (counts (simple-circuit q0)))
 
 
-;; Adiabatic circuit
+;; Adiabatic circuit |-> --> |1>
 
 (define a-circuit (make-circuit (append
                                  (list X
@@ -31,3 +31,12 @@
                                  (adiabatic-gates 30))))
 
 (plot-histogram (counts (a-circuit q0)))
+
+
+;; Adiabatic circuit 2 |+> --> |0>
+
+(define a-circuit2 (make-circuit (cons
+                                  H
+                                  (adiabatic-gates 30))))
+
+(plot-histogram (counts (a-circuit2 q0)))
