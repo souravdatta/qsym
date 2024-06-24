@@ -7,6 +7,7 @@
 
 (require "qsym.rkt")
 
+
 (define (q-registers cir)
   (first (second cir)))
 
@@ -59,6 +60,23 @@
          [rem-len (if (> len n) 0 (- n len))])
     (make-string rem-len #\space)))
 
+(define (def-circuit n . lrs)
+  (append (list 'circuit (list n))
+          lrs))
+
+(define-syntax (def-layer stx)
+  (define (convert expr)
+    (with-syntax ([[g i ...] (syntax->datum expr)])
+      #'(list
+         (quote g)
+         i ...)))
+  (syntax-case stx ()
+    [(_ xs ...) (with-syntax ([(ys ...)
+                               (map convert (syntax->list #'(xs ...)))])
+                  #'(list 'layer ys ...))]))
+
+(define SPC 15)
+
 (define (draw-circuit cir)
   (let* ([num-regs (q-registers cir)]
          [lrs (layers cir num-regs)])
@@ -67,7 +85,7 @@
         (if (and (> num-regs 1) (= (length l) 1))
             (display (format "|< ~a >|" (first l)))
             (let ([v (list-ref l i)])
-              (display (format "|  ~a~a|" v (gen-spaces v 8)))))
+              (display (format "|  ~a~a|" v (gen-spaces v SPC)))))
         (display " -> "))
       (displayln ""))))
 
@@ -76,14 +94,23 @@
          [lrs (layers cir num-regs)]
          [glrs (layers->matrices lrs num-regs)])
     (make-circuit glrs)))
-      
-;; (define c1 '(circuit (3)
-;;                      (layer (z 2)
-;;                             (h 1))
-;;                      (layer (cx 0 2))
-;;                      (layer ((rx 30) 0))))
-;; 
+
+
+;; (define c1 (def-circuit 3
+;;              (def-layer
+;;                [z 2]
+;;                [h 1])
+;;              (def-layer
+;;                (cx 0 2))
+;;              (def-layer
+;;                ((rx 30) 0))))
+
+;; '(circuit (3) (layer (z 2) (h 1)) (layer (cx 0 2)) (layer ((rx 30) 0)))
 
 ;; |  i       | -> |< (cx 0 2) >| -> |  (rx 30) | -> 
 ;; |  h       | -> |< (cx 0 2) >| -> |  i       | -> 
 ;; |  z       | -> |< (cx 0 2) >| -> |  i       | -> 
+
+
+(provide (all-defined-out))
+
