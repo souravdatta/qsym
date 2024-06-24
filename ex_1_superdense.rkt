@@ -6,6 +6,7 @@
 ;; https://github.com/souravdatta/qsym/blob/main/LICENSE
 
 (require "qsym.rkt")
+(require "qlang.rkt")
 
 ;; Super dense coding
 
@@ -76,3 +77,15 @@
 
 (counts (circuit4 input)) ;; decoded as (0 0) -> qiskit endian!
 (plot-histogram (counts (circuit4 input)))
+
+;; Using qlang
+
+(define c1 '(circuit (2)
+                     (layer (h 0))
+                     (layer (cx 0 1))
+                     (layer (z 0))
+                     (layer (cx 0 1))
+                     (layer (h 0))))
+
+(draw-circuit c1)
+(plot-histogram (counts ((sv-simulator c1) (qubits 2))))
