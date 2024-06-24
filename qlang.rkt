@@ -1,7 +1,11 @@
 #lang racket
 
-(require "qsym.rkt")
+;; Copyright Sourav Datta (soura.jagat@gmail.com)
+;; You should have received a copy of the LICENSE along with this code
+;; in the repository. If not refer to
+;; https://github.com/souravdatta/qsym/blob/main/LICENSE
 
+(require "qsym.rkt")
 
 (define (q-registers cir)
   (first (second cir)))
