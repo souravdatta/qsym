@@ -32,6 +32,7 @@ Check out the [tutorial](https://github.com/souravdatta/qsym/blob/main/qsym_tuto
 
 Implement an oracle to decode string `10011`
 
+First, using `qlang` which is an easy to write small circuits but is less flexible. Also, it can draw the circuit in a crude form.
 ```racket
 (define c (def-circuit 6
               (def-layer (x 5))
@@ -73,5 +74,41 @@ Implement an oracle to decode string `10011`
 ```
 
 <img width="410" alt="image" src="https://github.com/souravdatta/qsym/assets/1576318/17599c76-42e3-411a-b2f7-acab00f4fd44">
+
+Second, using the original `list` form - this is more flexible as one can manipulate the data in any way needed. But we can't draw circuits from it (yet).
+
+```racket
+;; Oracle for 10011
+(define oracle (gate-matrix 6
+                            (list
+                             (list '(0 5)
+                                   cnot-f)
+                             (list '(1 5)
+                                   cnot-f)
+                             (list '(4 5)
+                                   cnot-f))))
+
+(define cirq
+  (make-circuit (list
+                 (list (I 2)
+                       (I 2)
+                       (I 2)
+                       (I 2)
+                       (I 2)
+                       X)
+                 (make-list 6 H)
+                 oracle
+                 (make-list 6 H))))
+
+
+(define input (qubits 6))
+
+(define r (cirq input))
+
+(plot-histogram
+ (counts r #:shots 2000)) ;; 110011 with close 100% probability
+```
+
+Choosing `qlang` vs normal `qsym` is a matter of how complex the circuit is. If it is a small one, prefer `qlang`. If more complexity and reusability is required, use direct `qsym` `make-circuit` function.
 
 
