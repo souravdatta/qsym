@@ -1,5 +1,11 @@
 #lang racket
 
+;; Copyright Sourav Datta (soura.jagat@gmail.com)
+;; You should have received a copy of the LICENSE along with this code
+;; in the repository. If not refer to
+;; https://github.com/souravdatta/qsym/blob/main/LICENSE
+
+
 (require "qsym.rkt")
 
 
@@ -90,14 +96,14 @@
     (make-circuit glrs)))
 
 
-(define c1 (def-circuit 3
-             (def-layer
-               [z 2]
-               [h 1])
-             (def-layer
-               (cx 0 2))
-             (def-layer
-               ((rx (/ pi 6)) 0))))
+;; (define c1 (def-circuit 3
+;;              (def-layer
+;;                [z 2]
+;;                [h 1])
+;;              (def-layer
+;;                (cx 0 2))
+;;              (def-layer
+;;                ((rx (/ pi 6)) 0))))
 
 ;; '(circuit (3) (layer (z 2) (h 1)) (layer (cx 0 2)) (layer ((rx 30) 0)))
 
