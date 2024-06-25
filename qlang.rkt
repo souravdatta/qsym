@@ -1,10 +1,5 @@
 #lang racket
 
-;; Copyright Sourav Datta (soura.jagat@gmail.com)
-;; You should have received a copy of the LICENSE along with this code
-;; in the repository. If not refer to
-;; https://github.com/souravdatta/qsym/blob/main/LICENSE
-
 (require "qsym.rkt")
 
 
@@ -66,10 +61,9 @@
 
 (define-syntax (def-layer stx)
   (define (convert expr)
-    (with-syntax ([[g i ...] (syntax->datum expr)])
-      #'(list
-         (quote g)
-         i ...)))
+    (syntax-case expr ()
+      ([[f p ...] i ...] #'(list (list (quote f) p ...) i ...))
+      ([x i ...] #'(list (quote x) i ...))))
   (syntax-case stx ()
     [(_ xs ...) (with-syntax ([(ys ...)
                                (map convert (syntax->list #'(xs ...)))])
@@ -96,21 +90,20 @@
     (make-circuit glrs)))
 
 
-;; (define c1 (def-circuit 3
-;;              (def-layer
-;;                [z 2]
-;;                [h 1])
-;;              (def-layer
-;;                (cx 0 2))
-;;              (def-layer
-;;                ((rx 30) 0))))
+(define c1 (def-circuit 3
+             (def-layer
+               [z 2]
+               [h 1])
+             (def-layer
+               (cx 0 2))
+             (def-layer
+               ((rx (/ pi 6)) 0))))
 
 ;; '(circuit (3) (layer (z 2) (h 1)) (layer (cx 0 2)) (layer ((rx 30) 0)))
 
-;; |  i       | -> |< (cx 0 2) >| -> |  (rx 30) | -> 
-;; |  h       | -> |< (cx 0 2) >| -> |  i       | -> 
-;; |  z       | -> |< (cx 0 2) >| -> |  i       | -> 
+;; |  i              | -> |< (cx 0 2) >| -> |  (rx 0.5235987755982988)| -> 
+;; |  h              | -> |< (cx 0 2) >| -> |  i              | -> 
+;; |  z              | -> |< (cx 0 2) >| -> |  i              | -> 
 
 
 (provide (all-defined-out))
-
