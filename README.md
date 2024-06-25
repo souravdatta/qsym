@@ -23,5 +23,9 @@ Check out the [tutorial](https://github.com/souravdatta/qsym/blob/main/qsym_tuto
 
 
 ![plot](https://github.com/souravdatta/qsym/assets/1576318/fe93307e-d7a3-4142-ad38-5ff82670aa3e)
+
+### Another example with multiple entanglements
+
 <img width="596" alt="image" src="https://github.com/souravdatta/qsym/assets/1576318/412fe80a-7783-4b67-a5d6-512d6dce5fa9">
+
 
