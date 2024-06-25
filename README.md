@@ -5,12 +5,12 @@ Check out the [tutorial](https://github.com/souravdatta/qsym/blob/main/qsym_tuto
 ### Quick example - super dense coding
 
 ```racket
-(define c1 '(circuit (2)
-                     (layer (h 0))
-                     (layer (cx 0 1))
-                     (layer (z 0))
-                     (layer (cx 0 1))
-                     (layer (h 0))))
+(define c1 (def-circuit 2
+             (def-layer (h 0))
+             (def-layer (cx 0 1))
+             (def-layer (z 0))
+             (def-layer (cx 0 1))
+             (def-layer (h 0))))
 
 (draw-circuit c1)
 (plot-histogram (counts ((sv-simulator c1) (qubits 2))))
