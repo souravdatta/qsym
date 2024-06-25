@@ -28,4 +28,50 @@ Check out the [tutorial](https://github.com/souravdatta/qsym/blob/main/qsym_tuto
 
 <img width="596" alt="image" src="https://github.com/souravdatta/qsym/assets/1576318/412fe80a-7783-4b67-a5d6-512d6dce5fa9">
 
+### Bernstein-Vazirani algorithm
+
+Implement an oracle to decode string `10011`
+
+```racket
+(define c (def-circuit 6
+              (def-layer (x 5))
+              (def-layer
+                (h 0)
+                (h 1)
+                (h 2)
+                (h 3)
+                (h 4)
+                (h 5))
+              ;; begin oracle
+              (def-layer (cx 0 5))
+              (def-layer (cx 1 5))
+              (def-layer (cx 4 5))
+              ;; end oracle
+              (def-layer
+                (h 0)
+                (h 1)
+                (h 2)
+                (h 3)
+                (h 4)
+                (h 5))))
+
+(define sim (sv-simulator c))
+(plot-histogram
+ (counts (sim (qubits 6))))
+
+(draw-circuit c)
+```
+
+```
+;; 
+;; |  i              | -> |  h              | -> |< (cx 0 5) >| -> |< (cx 1 5) >| -> |< (cx 4 5) >| -> |  h              | -> 
+;; |  i              | -> |  h              | -> |< (cx 0 5) >| -> |< (cx 1 5) >| -> |< (cx 4 5) >| -> |  h              | -> 
+;; |  i              | -> |  h              | -> |< (cx 0 5) >| -> |< (cx 1 5) >| -> |< (cx 4 5) >| -> |  h              | -> 
+;; |  i              | -> |  h              | -> |< (cx 0 5) >| -> |< (cx 1 5) >| -> |< (cx 4 5) >| -> |  h              | -> 
+;; |  i              | -> |  h              | -> |< (cx 0 5) >| -> |< (cx 1 5) >| -> |< (cx 4 5) >| -> |  h              | -> 
+;; |  x              | -> |  h              | -> |< (cx 0 5) >| -> |< (cx 1 5) >| -> |< (cx 4 5) >| -> |  h              | -> 
+```
+
+<img width="410" alt="image" src="https://github.com/souravdatta/qsym/assets/1576318/17599c76-42e3-411a-b2f7-acab00f4fd44">
+
 
