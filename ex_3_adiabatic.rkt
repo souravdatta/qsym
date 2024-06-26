@@ -40,3 +40,26 @@
                                   (adiabatic-gates 30))))
 
 (plot-histogram (counts (a-circuit2 q0)))
+
+;; Using qlang
+
+(define (adiabatic-layers angle)
+  (reverse
+   (for/fold ([a '()])
+             ([i (range 0 1 0.001)])
+     (cons (def-layer [(rz (* angle i)) 0])
+           (cons (def-layer [(rx (* angle (- 1 i))) 0]) a)))))
+
+(define circuit (def-circuit 1
+                  (def-layer
+                    (x 0))
+                  (def-layer
+                    (h 0))
+                  (adiabatic-layers 30)))
+
+(define simulator (sv-simulator circuit))
+
+(plot-histogram (counts (simulator q0)))
+
+;; (draw-circuit circuit)
+
