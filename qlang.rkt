@@ -63,7 +63,12 @@
 
 (define (def-circuit n . lrs)
   (append (list 'circuit (list n))
-          lrs))
+          (for/fold ([a '()])
+                    ([l lrs])
+            (if (and (list? l)
+                     (eq? (first l) 'layer))
+                (append a (list l))
+                (append a l)))))
 
 (define-syntax (def-layer stx)
   (define (convert expr)
@@ -75,6 +80,9 @@
                                (map convert (syntax->list #'(xs ...)))])
                   #'(list 'layer ys ...))]))
 
+(define (list->layer lsts)
+  (cons 'layer lsts))
+
 (define SPC 15)
 
 (define (draw-circuit cir)
@@ -85,7 +93,9 @@
         (if (and (> num-regs 1) (= (length l) 1))
             (display (format "|< ~a >|" (first l)))
             (let ([v (list-ref l i)])
-              (display (format "|  ~a~a|" v (gen-spaces v SPC)))))
+              (display (format "|  ~a~a|"
+                               (if (eq? v 'i) " " v)
+                               (gen-spaces v SPC)))))
         (display " -> "))
       (displayln ""))))
 
@@ -107,9 +117,13 @@
 
 ;; '(circuit (3) (layer (z 2) (h 1)) (layer (cx 0 2)) (layer ((rx 30) 0)))
 
-;; |  i              | -> |< (cx 0 2) >| -> |  (rx 0.5235987755982988)| -> 
-;; |  h              | -> |< (cx 0 2) >| -> |  i              | -> 
-;; |  z              | -> |< (cx 0 2) >| -> |  i              | -> 
+;; |                 | -> |< (cx 0 2) >| -> |  (rx 0.5235987755982988)| -> 
+;; |  h              | -> |< (cx 0 2) >| -> |                         | -> 
+;; |  z              | -> |< (cx 0 2) >| -> |                         | -> 
 
 
-(provide (all-defined-out))
+(provide def-circuit
+         def-layer
+         list->layer
+         draw-circuit
+         sv-simulator)
