@@ -30,7 +30,7 @@ Check out the [tutorial](https://github.com/souravdatta/qsym/blob/main/qsym_tuto
 
 ### Bernstein-Vazirani algorithm
 
-Implement an oracle to decode string `10011`
+Implement a circuit to decode an oracle which encodes the string `10011`
 
 First, using `qlang` which is an easy to write small circuits but is less flexible. Also, it can draw the circuit in a crude form.
 ```racket
