@@ -40,37 +40,32 @@
  (counts r #:shots 2000)) ;; 110011 with close 100% probability
 
 ;; Using Qlang
+
+(define oracle2 (list
+                (def-layer (cx 0 5))
+                (def-layer (cx 1 5))
+                (def-layer (cx 4 5))))
+
+;; helper function
+(define (hgates n)
+  (for/list ([i (range n)])
+    (list 'h i)))
+
 (define c (def-circuit 6
               (def-layer (x 5))
-              (def-layer
-                (h 0)
-                (h 1)
-                (h 2)
-                (h 3)
-                (h 4)
-                (h 5))
-              ;; begin oracle
-              (def-layer (cx 0 5))
-              (def-layer (cx 1 5))
-              (def-layer (cx 4 5))
-              ;; end oracle
-              (def-layer
-                (h 0)
-                (h 1)
-                (h 2)
-                (h 3)
-                (h 4)
-                (h 5))))
+              (list->layer (hgates 6))
+              oracle2 ;; the secret oracle that encode a string
+              (list->layer (hgates 6))))
 
 (define sim (sv-simulator c))
 (plot-histogram
- (counts (sim (qubits 6))))
+ (counts (sim (qubits 6)))) ; This should reveal 1<secret string from oracle - 10011> with max prob
 
 (draw-circuit c)
-;; 
-;; |  i              | -> |  h              | -> |< (cx 0 5) >| -> |< (cx 1 5) >| -> |< (cx 4 5) >| -> |  h              | -> 
-;; |  i              | -> |  h              | -> |< (cx 0 5) >| -> |< (cx 1 5) >| -> |< (cx 4 5) >| -> |  h              | -> 
-;; |  i              | -> |  h              | -> |< (cx 0 5) >| -> |< (cx 1 5) >| -> |< (cx 4 5) >| -> |  h              | -> 
-;; |  i              | -> |  h              | -> |< (cx 0 5) >| -> |< (cx 1 5) >| -> |< (cx 4 5) >| -> |  h              | -> 
-;; |  i              | -> |  h              | -> |< (cx 0 5) >| -> |< (cx 1 5) >| -> |< (cx 4 5) >| -> |  h              | -> 
+
+;; |                 | -> |  h              | -> |< (cx 0 5) >| -> |< (cx 1 5) >| -> |< (cx 4 5) >| -> |  h              | -> 
+;; |                 | -> |  h              | -> |< (cx 0 5) >| -> |< (cx 1 5) >| -> |< (cx 4 5) >| -> |  h              | -> 
+;; |                 | -> |  h              | -> |< (cx 0 5) >| -> |< (cx 1 5) >| -> |< (cx 4 5) >| -> |  h              | -> 
+;; |                 | -> |  h              | -> |< (cx 0 5) >| -> |< (cx 1 5) >| -> |< (cx 4 5) >| -> |  h              | -> 
+;; |                 | -> |  h              | -> |< (cx 0 5) >| -> |< (cx 1 5) >| -> |< (cx 4 5) >| -> |  h              | -> 
 ;; |  x              | -> |  h              | -> |< (cx 0 5) >| -> |< (cx 1 5) >| -> |< (cx 4 5) >| -> |  h              | -> 
