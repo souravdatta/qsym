@@ -35,9 +35,9 @@ Implement an oracle to decode string `10011`
 First, using `qlang` which is an easy to write small circuits but is less flexible. Also, it can draw the circuit in a crude form.
 ```racket
 (define oracle2 (list
-                (def-layer (cx 0 5))
-                (def-layer (cx 1 5))
-                (def-layer (cx 4 5))))
+                 (def-layer (cx 0 5))
+                 (def-layer (cx 1 5))
+                 (def-layer (cx 4 5))))
 
 ;; helper function
 (define (hgates n)
@@ -45,10 +45,10 @@ First, using `qlang` which is an easy to write small circuits but is less flexib
     (list 'h i)))
 
 (define c (def-circuit 6
-              (def-layer (x 5))
-              (list->layer (hgates 6))
-              oracle2 ;; the secret oracle that encode a string
-              (list->layer (hgates 6))))
+            (def-layer (x 5))
+            (list->layer (hgates 6))
+            oracle2 ;; the secret oracle that encode a string
+            (list->layer (hgates 6))))
 
 (define sim (sv-simulator c))
 (plot-histogram
