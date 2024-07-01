@@ -99,6 +99,7 @@
 
 (displayln "secret")
 (displayln secret)
+(displayln (length secret))
 (define msg (alice secret))
 (displayln (first msg))
 
