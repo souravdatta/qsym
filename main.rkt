@@ -7,7 +7,10 @@
          "private/gates.rkt"
          "private/circuit.rkt"
          "private/simulator.rkt"
-         "private/measurement.rkt")
+         "private/measurement.rkt"
+         "private/plot.rkt"
+         "private/draw-text.rkt"
+         "private/draw-pict.rkt")
 
 (provide
  ;; -- linalg --
@@ -71,4 +74,15 @@
  run-shot
  counts
  run-shots
- probabilities)
+ probabilities
+ ;; -- plot --
+ plot-histogram
+ plot-state-probabilities
+ ;; -- draw-text --
+ circuit->text
+ print-circuit
+ assign-columns
+ item-wire-span
+ gate-label
+ ;; -- draw-pict --
+ circuit->pict)
