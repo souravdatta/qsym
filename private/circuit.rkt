@@ -1,13 +1,17 @@
 #lang racket/base
 
-;; Circuit IR: instruction structs, circuit struct, builder, composition,
-;; inverse, QFT, and prop:procedure application.
+;; Circuit IR: layer-item structs, circuit struct, builder, composition,
+;; inverse, QFT, tensor product of states, and the gate-application kernels.
 ;;
-;; Layer types:
+;; The kernels (apply-gate-kq/1q/2q, apply-item) live here rather than in
+;; simulator.rkt so that circuit's prop:procedure can use the O(2^n) fast path
+;; without creating a circular module dependency.
+;;
+;; Layer types accepted by make-circuit:
 ;;   (list g0 g1 ...)  positional: gi is a 1-qubit gate on qubit i
 ;;   gate              bare: applied to qubits 0..arity-1
 ;;   gate-at           gate at explicit qubit indices
-;;   measure-at        measurement layer (Phase 4 — validated, not executed here)
+;;   measure-at        measurement (Phase 4)
 ;;   when-bit*         classically-conditioned item (Phase 4)
 ;;
 ;; Convention: (at gate q0 q1 ...) -> local qubit 0 = q0, etc.; control first.
@@ -16,6 +20,7 @@
 (require math/matrix
          racket/math
          racket/list
+         racket/vector
          "linalg.rkt"
          "gates.rkt"
          "state.rkt")
@@ -44,7 +49,12 @@
  qft
  inverse-qft
  ;; tensor product of states
- t*)
+ t*
+ ;; gate-application kernels (used by simulator.rkt and measurement.rkt)
+ apply-gate-kq
+ apply-gate-1q
+ apply-gate-2q
+ apply-item)
 
 ;; ---- layer-item structs ----------------------------------------------------
 
@@ -163,10 +173,69 @@
     (validate-item! item n-qubits n-clbits))
   (circuit n-qubits n-clbits layers))
 
+;; ---- gate-application kernels ----------------------------------------------
+;;
+;; O(2^n) per gate: partition basis indices into groups by their "base" (all
+;; target bits cleared); apply the gate matrix to each group's sub-vector.
+;; All mutation is local: a fresh mutable vector is filled and frozen.
+
+(define (apply-gate-kq mat qs state)
+  (define n     (quantum-state-num-qubits state))
+  (define N     (expt 2 n))
+  (define k     (length qs))
+  (define K     (expt 2 k))
+  (define amps  (quantum-state-amplitudes state))
+  (define steps (list->vector (map (lambda (q) (expt 2 q)) qs)))
+  (define mask  (for/fold ([m 0]) ([s (in-vector steps)]) (bitwise-ior m s)))
+  (define out   (vector-copy amps))
+  (for ([base (in-range N)]
+        #:when (= (bitwise-and base mask) 0))
+    (define idx-vec
+      (for/vector ([s (in-range K)])
+        (for/fold ([idx base])
+                  ([step (in-vector steps)] [pos (in-naturals)])
+          (+ idx (* step (bitwise-and (arithmetic-shift s (- pos)) 1))))))
+    (define old-vals
+      (for/vector ([c (in-range K)])
+        (vector-ref amps (vector-ref idx-vec c))))
+    (for ([r (in-range K)])
+      (define new-val
+        (for/fold ([acc 0+0i])
+                  ([c (in-range K)])
+          (+ acc (* (matrix-ref mat r c) (vector-ref old-vals c)))))
+      (vector-set! out (vector-ref idx-vec r) new-val)))
+  (quantum-state n (vector->immutable-vector out)))
+
+(define (apply-gate-1q mat t state)
+  (apply-gate-kq mat (list t) state))
+
+(define (apply-gate-2q mat t0 t1 state)
+  (apply-gate-kq mat (list t0 t1) state))
+
+;; apply-item: dispatch one measurement-free layer item to the appropriate kernel.
+(define (apply-item item state)
+  (cond
+    [(list? item)
+     (for/fold ([st state])
+               ([g item] [i (in-naturals)])
+       (if (eq? (gate-name g) 'id)
+           st
+           (apply-gate-1q (gate-matrix g) i st)))]
+    [(gate? item)
+     (apply-gate-kq (gate-matrix item)
+                    (for/list ([i (in-range (gate-arity item))]) i)
+                    state)]
+    [(gate-at? item)
+     (apply-gate-kq (gate-matrix (gate-at-gate item))
+                    (gate-at-qubits item)
+                    state)]
+    [else
+     (error 'apply-item "unrecognized layer item: ~a" item)]))
+
 ;; ---- circuit->matrix -------------------------------------------------------
 ;;
-;; Build the full 2^n × 2^n unitary matrix for a measurement-free circuit.
-;; Used as the test oracle in Phase 3 and as the execution engine in Phase 2.
+;; Full 2^n × 2^n unitary matrix for a measurement-free circuit.
+;; Kept as a test oracle (cross-validates the index-arithmetic kernels).
 
 (define (circuit->matrix circ)
   (define n (circuit-num-qubits circ))
@@ -175,57 +244,41 @@
             ([item (circuit-layers circ)])
     (matrix* (layer->matrix item n) acc)))
 
-;; Convert a single layer item to its 2^n × 2^n matrix.
 (define (layer->matrix item n)
   (define N (expt 2 n))
   (cond
-    ;; Positional list: tensor product in qubit order.
-    ;; Full matrix = g_{n-1} ⊗ ... ⊗ g_1 ⊗ g_0   (q0 = LSB = rightmost factor).
-    ;; Fold left with (g_i ⊗ acc): after k steps acc = g_{k-1} ⊗ ... ⊗ g_0.
     [(list? item)
      (for/fold ([m (matrix [[1]])])
                ([g item])
        (tensor-product (gate-matrix g) m))]
-    ;; Bare gate on qubits 0..arity-1: prepend identity for qubits arity..n-1.
     [(gate? item)
      (let ([k (gate-arity item)])
        (for/fold ([m (gate-matrix item)])
                  ([_ (in-range (- n k))])
          (tensor-product (identity-matrix 2) m)))]
-    ;; Gate at explicit qubit indices.
     [(gate-at? item)
      (gate-at->matrix item n)]
-    ;; Measurement and conditioning are no-ops at the matrix level.
     [(or (measure-at? item) (when-bit*? item))
      (identity-matrix N)]
     [else
      (error 'circuit->matrix "unrecognized layer item: ~a" item)]))
 
-;; Build the 2^n × 2^n matrix for a gate applied at explicit qubit indices.
-;;
-;; For each column (input basis state), extract the sub-index for the target
-;; qubits, look up the gate-matrix column, and scatter the output bits back
-;; into a full-register row index.  Non-target bit positions are copied unchanged.
 (define (gate-at->matrix item n)
   (define g    (gate-at-gate item))
-  (define qs   (gate-at-qubits item))   ; list of qubit indices (local q0, q1, ...)
+  (define qs   (gate-at-qubits item))
   (define k    (gate-arity g))
   (define N    (expt 2 n))
   (define g-mat (gate-matrix g))
-  ;; Build result as a row-major flat vector, then reshape.
   (define result (make-vector (* N N) 0))
   (for ([col (in-range N)])
-    ;; sub-col: pack bits at positions qs[0],qs[1],... of col into bits 0,1,...
     (define sub-col
       (for/fold ([s 0])
                 ([qi qs] [pos (in-naturals)])
         (+ s (* (bitwise-and (arithmetic-shift col (- qi)) 1)
                 (expt 2 pos)))))
-    ;; For each gate output sub-index, scatter into the full row index.
     (for ([sub-row (in-range (expt 2 k))])
       (define entry (matrix-ref g-mat sub-row sub-col))
       (unless (= entry 0)
-        ;; full-row: copy non-target bits from col; replace target bits from sub-row.
         (define full-row
           (for/fold ([r col])
                     ([qi qs] [pos (in-naturals)])
@@ -240,8 +293,8 @@
 
 ;; ---- circuit application (prop:procedure target) ---------------------------
 ;;
-;; Phase 2 uses the matrix path (circuit->matrix × state vector).
-;; Phase 3 will replace this with the index-arithmetic simulator.
+;; Uses the index-arithmetic kernels for O(2^n) per gate.
+;; Errors on circuits with measurement; use run-shot for those.
 
 (define (circuit-run-state circ state)
   (unless (= (circuit-num-qubits circ) (quantum-state-num-qubits state))
@@ -250,14 +303,9 @@
   (when (ormap (λ (item) (or (measure-at? item) (when-bit*? item)))
                (circuit-layers circ))
     (error 'circuit "circuit contains measurement; use run-shot"))
-  (define n    (circuit-num-qubits circ))
-  (define N    (expt 2 n))
-  (define mat  (circuit->matrix circ))
-  (define amps (quantum-state-amplitudes state))
-  (define col  (build-matrix N 1 (λ (i _) (vector-ref amps i))))
-  (define out  (matrix* mat col))
-  (quantum-state n (vector->immutable-vector
-                    (for/vector ([i (in-range N)]) (matrix-ref out i 0)))))
+  (for/fold ([st state])
+            ([item (circuit-layers circ)])
+    (apply-item item st)))
 
 ;; ---- circuit combinators ---------------------------------------------------
 
@@ -274,7 +322,6 @@
            (circuit-num-clbits circ)
            (apply append (make-list n (circuit-layers circ)))))
 
-;; circuit-inverse: reverse layers and invert every gate.
 (define (circuit-inverse circ)
   (define (invert-item item)
     (cond
@@ -287,7 +334,6 @@
            (circuit-num-clbits circ)
            (map invert-item (reverse (circuit-layers circ)))))
 
-;; circuit->gate: wrap a measurement-free circuit as a reusable gate.
 (define (circuit->gate name circ)
   (when (ormap (λ (item) (or (measure-at? item) (when-bit*? item)))
                (circuit-layers circ))
@@ -299,20 +345,10 @@
 
 ;; ---- QFT -------------------------------------------------------------------
 ;;
-;; QFT on n qubits, built from H and controlled-phase (CP) gates.
-;; For each qubit q (0 to n-1):
-;;   H on q, then CP(π/2^k) with control=(q+k), target=q for k=1..n-1-q.
-;; Followed by SWAP(i, n-1-i) for i=0..⌊n/2⌋-1 to reverse qubit order.
-;;
-;; (at (CP θ) ctrl target) uses our convention: first arg = control.
+;; QFT on n qubits built from H and CP gates, little-endian convention.
+;; For q = n-1 downto 0: H on q, then CP(π/2^j) with ctrl=(q-j), target=q.
+;; Followed by SWAP reversals to match Qiskit's output qubit order.
 
-;; In qsym's little-endian convention (qubit 0 = LSB), the QFT circuit is:
-;;   For q = n-1 downto 0:
-;;     H on q
-;;     For j = 1 to q: CP(π/2^j) with control=(q-j), target=q
-;;   Then SWAP(0, n-1), SWAP(1, n-2), ...
-;;
-;; This matches Qiskit's QFT (which starts from the high qubit in its q[0]=MSB ordering).
 (define (qft n)
   (define rotation-layers
     (apply append
@@ -330,8 +366,8 @@
 
 ;; ---- tensor product of quantum states -------------------------------------
 ;;
-;; (t* s1 s2 ...): combines states so s1's qubits become the lower-index qubits.
-;; Combined index k = k1 + k2 * 2^n1 (s1's bits in the low positions).
+;; (t* s1 s2 ...): s1's qubits become the lower-index qubits.
+;; Index: k1 + k2*2^n1 so s1 occupies bits 0..n1-1, s2 occupies bits n1..n1+n2-1.
 
 (define (t* . states)
   (define (tensor-two s1 s2)

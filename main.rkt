@@ -1,12 +1,13 @@
 #lang racket/base
 
-;; qsym public API — populated across implementation phases.
+;; qsym public API
 
 (require "private/linalg.rkt"
          "private/state.rkt"
          "private/gates.rkt"
          "private/circuit.rkt"
-         "private/simulator.rkt")
+         "private/simulator.rkt"
+         "private/measurement.rkt")
 
 (provide
  ;; -- linalg --
@@ -61,4 +62,13 @@
  apply-gate-1q
  apply-gate-2q
  apply-gate-kq
- run-state)
+ run-state
+ gX gY gZ gH gS gT gTdg
+ gRx gRy gRz
+ ;; -- measurement --
+ marginal-distribution
+ collapse-state
+ run-shot
+ counts
+ run-shots
+ probabilities)
