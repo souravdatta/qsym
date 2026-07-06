@@ -1,107 +1,131 @@
-## A simple library for simulating quantum computing
+# qsym — Quantum State-Vector Simulation in Racket
 
-Check out the [tutorial](https://github.com/souravdatta/qsym/blob/main/qsym_tutorial.md) for details.
+`qsym` is a Racket library for simulating quantum circuits on a classical computer.
+It covers n-qubit state-vector simulation, partial mid-circuit measurement with
+classical conditioning, circuit drawing, and histogram plots.
 
-### Quick example - super dense coding
+**Convention:** qsym uses **little-endian, Qiskit-compatible** bit ordering.
+Qubit 0 is the least-significant bit of a basis-state index.
+Bit strings print MSB-first so qubit 0 is the rightmost character
+(e.g. `"01"` means qubit 0 = 1, qubit 1 = 0).
 
-```racket
-(define c1 (def-circuit 2
-             (def-layer (h 0))
-             (def-layer (cx 0 1))
-             (def-layer (z 0))
-             (def-layer (cx 0 1))
-             (def-layer (h 0))))
-
-(draw-circuit c1)
-(plot-histogram (counts ((sv-simulator c1) (qubits 2))))
-```
-
-```
-|  h       | -> |< (cx 0 1) >| -> |  z       | -> |< (cx 0 1) >| -> |  h       | -> 
-|  i       | -> |< (cx 0 1) >| -> |  i       | -> |< (cx 0 1) >| -> |  i       | ->
-```
-
-
-![plot](https://github.com/souravdatta/qsym/assets/1576318/fe93307e-d7a3-4142-ad38-5ff82670aa3e)
-
-### Another example with multiple entanglements
-
-<img width="596" alt="image" src="https://github.com/souravdatta/qsym/assets/1576318/412fe80a-7783-4b67-a5d6-512d6dce5fa9">
-
-### Bernstein-Vazirani algorithm
-
-Implement a circuit to decode an oracle which encodes the string `10011`
-
-First, using `qlang` which is an easy to write small circuits but is less flexible. Also, it can draw the circuit in a crude form.
-```racket
-(define oracle2 (list
-                 (def-layer (cx 0 5))
-                 (def-layer (cx 1 5))
-                 (def-layer (cx 4 5))))
-
-;; helper function
-(define (hgates n)
-  (for/list ([i (range n)])
-    (list 'h i)))
-
-(define c (def-circuit 6
-            (def-layer (x 5))
-            (list->layer (hgates 6))
-            oracle2 ;; the secret oracle that encode a string
-            (list->layer (hgates 6))))
-
-(define sim (sv-simulator c))
-(plot-histogram
- (counts (sim (qubits 6)))) ; This should reveal 1<secret string from oracle - 10011> with max prob
-
-(draw-circuit c)
-```
-
-```
-;; |                 | -> |  h              | -> |< (cx 0 5) >| -> |< (cx 1 5) >| -> |< (cx 4 5) >| -> |  h              | -> 
-;; |                 | -> |  h              | -> |< (cx 0 5) >| -> |< (cx 1 5) >| -> |< (cx 4 5) >| -> |  h              | -> 
-;; |                 | -> |  h              | -> |< (cx 0 5) >| -> |< (cx 1 5) >| -> |< (cx 4 5) >| -> |  h              | -> 
-;; |                 | -> |  h              | -> |< (cx 0 5) >| -> |< (cx 1 5) >| -> |< (cx 4 5) >| -> |  h              | -> 
-;; |                 | -> |  h              | -> |< (cx 0 5) >| -> |< (cx 1 5) >| -> |< (cx 4 5) >| -> |  h              | -> 
-;; |  x              | -> |  h              | -> |< (cx 0 5) >| -> |< (cx 1 5) >| -> |< (cx 4 5) >| -> |  h              | -> 
-```
-
-<img width="410" alt="image" src="https://github.com/souravdatta/qsym/assets/1576318/17599c76-42e3-411a-b2f7-acab00f4fd44">
-
-Second, using the original `list` form - this is more flexible as one can manipulate the data in any way needed. But we can't draw circuits from it (yet).
+## Quickstart
 
 ```racket
-;; Oracle for 10011
-(define oracle (gate-matrix 6
-                            (list
-                             (list '(0 5)
-                                   cnot-f)
-                             (list '(1 5)
-                                   cnot-f)
-                             (list '(4 5)
-                                   cnot-f))))
+(require qsym)
 
-(define cirq
-  (make-circuit (list
-                 (list (I 2)
-                       (I 2)
-                       (I 2)
-                       (I 2)
-                       (I 2)
-                       X)
-                 (make-list 6 H)
-                 oracle
-                 (make-list 6 H))))
+;; Bell pair
+(define bell
+  (make-circuit (list (list H ID) (at CX 0 1)) #:qubits 2))
 
+(define state (bell (qubits 2)))
+(counts state #:shots 1024 #:seed 1)
+; => #hash(("00" . 510) ("11" . 514))
 
-(define input (qubits 6))
-
-(define r (cirq input))
-
-(plot-histogram
- (counts r #:shots 2000)) ;; 110011 with close 100% probability
+(print-circuit bell)
+; q0 : ─[H]───●──
+; q1 : [ID]───⊕──
 ```
 
-Choosing `qlang` vs normal `qsym` is a matter of how complex the circuit is. If it is a small one, prefer `qlang`. If more complexity and reusability is required, use direct `qsym` `make-circuit` function.
+## Examples
 
+| File | Algorithm |
+|---|---|
+| `examples/teleportation.rkt` | Quantum teleportation (mid-circuit measure + conditional gates) |
+| `examples/grover.rkt` | Grover search (2 qubits, target \|11⟩) |
+| `examples/qft.rkt` | Quantum Fourier Transform vs. DFT matrix |
+| `examples/bb84.rkt` | BB84 quantum key distribution |
+| `examples/superdense.rkt` | Superdense coding |
+| `examples/bernstein-vazirani.rkt` | Bernstein–Vazirani algorithm |
+| `examples/deutsch-jozsa.rkt` | Deutsch–Jozsa algorithm |
+| `examples/adiabatic.rkt` | Adiabatic evolution (1 qubit) |
 
+Run any example with:
+```sh
+racket examples/grover.rkt
+```
+
+## API summary
+
+### States
+```racket
+(zero-state n)               ; |0…0⟩ with n qubits
+(basis-state n k)            ; |k⟩ (amplitude 1 at index k)
+(qubits n)                   ; alias for zero-state
+q0                           ; the single-qubit |0⟩
+(t* s1 s2)                   ; tensor product of two states
+(state-probability st k)     ; |ψ_k|² for basis state k
+(qubit-probability st q v)   ; marginal P(qubit q = v)
+```
+
+### Gates
+```racket
+;; 1-qubit constants
+ID  X  Y  Z  H  S  Sdg  T  Tdg
+
+;; Parametric
+(RX theta)  (RY theta)  (RZ theta)
+(P theta)   (U theta phi lam)
+
+;; 2-qubit
+CX  CY  CZ  CH  SWAP
+(CP theta)  (CRX theta)
+
+;; 3-qubit
+CCX  CSWAP
+
+;; Combinators
+(controlled g)              ; add one control qubit
+(gate-inverse g)            ; conjugate transpose
+(matrix->gate 'name mat)    ; custom gate from unitary matrix
+```
+
+### Circuits
+```racket
+;; Layer items accepted by make-circuit:
+;;   (list g0 g1 …)         positional: gi on qubit i (all 1-qubit)
+;;   gate                   bare: gate applied to qubits 0…arity-1
+;;   (at gate q0 q1 …)      explicit placement; first qubit = control
+;;   (measure q …)          measure into classical register
+;;   (when-bit c v item)    apply item iff classical bit c == v
+
+(make-circuit layers #:qubits n #:clbits m)
+(circuit-append c1 c2)
+(circuit-repeat c n)
+(circuit-inverse c)
+(circuit->matrix c)    ; full 2^n × 2^n unitary (small circuits only)
+(qft n)                ; Quantum Fourier Transform circuit
+(inverse-qft n)
+```
+
+### Simulation
+```racket
+(run-state circ state)                          ; measurement-free
+(run-shot  circ [state])                        ; → (values state cbits)
+(run-shots circ [state] #:shots 1024 #:seed 42) ; → hash string→count
+(counts    state #:shots 1024 #:seed 42)        ; no circuit, no collapse
+(probabilities state)                           ; exact distribution
+```
+
+### Visualization
+```racket
+(print-circuit circ)           ; ASCII to stdout
+(circuit->text circ)           ; ASCII as string
+(circuit->pict circ)           ; pict (composable, DrRacket-friendly)
+(plot-histogram counts)         ; discrete probability bar chart
+(plot-state-probabilities st)   ; exact probability bar chart
+```
+
+## Testing
+
+```sh
+raco test tests/    # 226 tests, all green
+```
+
+## Full documentation
+
+Build and open the Scribble reference:
+
+```sh
+raco docs qsym
+```
