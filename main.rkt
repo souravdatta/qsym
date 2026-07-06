@@ -5,7 +5,8 @@
 (require "private/linalg.rkt"
          "private/state.rkt"
          "private/gates.rkt"
-         "private/circuit.rkt")
+         "private/circuit.rkt"
+         "private/simulator.rkt")
 
 (provide
  ;; -- linalg --
@@ -55,4 +56,9 @@
  circuit->matrix
  qft
  inverse-qft
- t*)
+ t*
+ ;; -- simulator --
+ apply-gate-1q
+ apply-gate-2q
+ apply-gate-kq
+ run-state)
