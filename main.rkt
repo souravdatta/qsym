@@ -3,7 +3,9 @@
 ;; qsym public API — populated across implementation phases.
 
 (require "private/linalg.rkt"
-         "private/state.rkt")
+         "private/state.rkt"
+         "private/gates.rkt"
+         "private/circuit.rkt")
 
 (provide
  ;; -- linalg --
@@ -25,4 +27,32 @@
  state-normalized?
  state-~=
  qubits
- q0)
+ q0
+ ;; -- gates --
+ (struct-out gate)
+ ID X Y Z H S Sdg T Tdg
+ RX RY RZ P U
+ CX CY CZ CH SWAP
+ CP CRX
+ CCX CSWAP
+ matrix->gate
+ gate-inverse
+ controlled
+ ;; -- circuit --
+ (struct-out gate-at)
+ (struct-out measure-at)
+ (struct-out when-bit*)
+ (struct-out circuit)
+ at
+ measure
+ when-bit
+ make-circuit
+ circuit-layers
+ circuit-append
+ circuit-repeat
+ circuit-inverse
+ circuit->gate
+ circuit->matrix
+ qft
+ inverse-qft
+ t*)
