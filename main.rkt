@@ -19,7 +19,8 @@
          "private/measurement.rkt"
          "private/plot.rkt"
          "private/draw-text.rkt"
-         "private/draw-pict.rkt")
+         "private/draw-pict.rkt"
+         "private/bloch.rkt")
 
 ;; ---- struct re-exports (no contract-out wrapper for structs) ----------------
 
@@ -154,4 +155,10 @@
   [gate-label      (-> gate? string?)]
 
   ;; ── draw-pict ────────────────────────────────────────────────────────────
-  [circuit->pict   (-> circuit? pict?)]))
+  [circuit->pict   (-> circuit? pict?)]
+
+  ;; ── bloch ────────────────────────────────────────────────────────────────
+  [qubit-density-matrix  (-> quantum-state? nat/c matrix?)]
+  [bloch-vector          (-> quantum-state? nat/c (listof real?))]
+  [bloch-pict            (->* (quantum-state?) (nat/c #:size positive?) pict?)]
+  [bloch-pict*           (->* (quantum-state?) (#:size positive?) pict?)]))

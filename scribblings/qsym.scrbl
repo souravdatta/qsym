@@ -528,6 +528,34 @@ achieves probability 1.  The diffusion operator is
   @racket[circuit->text].
 }
 
+@subsection{Bloch sphere diagrams}
+
+@defproc[(qubit-density-matrix [state quantum-state?] [q exact-nonneg-integer?])
+         matrix?]{
+  The 2×2 reduced density matrix of qubit @racket[q]: the partial trace of
+  the full state over all other qubits.  Hermitian with unit trace.
+}
+
+@defproc[(bloch-vector [state quantum-state?] [q exact-nonneg-integer?])
+         (listof real?)]{
+  The Bloch vector @racket[(list x y z)] of qubit @racket[q], computed from
+  the Pauli expectations of its reduced density matrix.
+  Length 1 for a pure, unentangled qubit; shorter when the qubit is entangled
+  with the rest of the register (length 0 = maximally mixed, e.g. either half
+  of a Bell pair).
+}
+
+@defproc[(bloch-pict [state quantum-state?] [q exact-nonneg-integer? 0]
+                     [#:size size positive? 180]) pict?]{
+  Draw qubit @racket[q] on a Bloch sphere: sphere outline, dashed equator,
+  x/y/z axes, and the Bloch vector as an arrow (a centered dot when the
+  vector is zero).  A caption shows the qubit index and vector length.
+}
+
+@defproc[(bloch-pict* [state quantum-state?] [#:size size positive? 180]) pict?]{
+  Bloch spheres for every qubit of the state, side by side.
+}
+
 @subsection{Layout helpers}
 
 @defproc[(assign-columns [circ circuit?]) (listof (cons/c any/c exact-nonneg-integer?))]{

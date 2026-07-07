@@ -114,6 +114,9 @@ CCX  CSWAP
 (circuit->pict circ)           ; pict (composable, DrRacket-friendly)
 (plot-histogram counts)         ; discrete probability bar chart
 (plot-state-probabilities st)   ; exact probability bar chart
+(bloch-vector st q)             ; Bloch vector (x y z) of qubit q
+(bloch-pict st q)               ; Bloch sphere diagram of qubit q
+(bloch-pict* st)                ; one sphere per qubit, side by side
 ```
 
 ## Testing
