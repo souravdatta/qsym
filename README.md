@@ -125,6 +125,13 @@ CCX  CSWAP
 raco test tests/    # 226 tests, all green
 ```
 
+## Learning series
+
+New to quantum computing? [`docs/learning/`](docs/learning/README.md) is a
+13-part blog-style tutorial series that goes from installing Racket to
+teleportation, BB84, Grover, and adiabatic computing — every concept
+introduced through runnable qsym code.
+
 ## Full documentation
 
 Build and open the Scribble reference:
